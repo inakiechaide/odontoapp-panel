@@ -149,7 +149,7 @@ export function InboxPanel() {
                         ? `${conv.patient.nombre} ${conv.patient.apellido}`
                         : conv.telefonoWhatsapp}
                     </p>
-                    {conv._count?.messages > 0 && (
+                    {((conv?._count?.messages ?? 0) > 0) && (
                       <span className="w-5 h-5 bg-brand-600 text-white text-xs rounded-full flex items-center justify-center flex-shrink-0">
                         {(conv?._count as any)?.messages ?? 0}
                       </span>
