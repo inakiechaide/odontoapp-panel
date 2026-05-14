@@ -1,16 +1,14 @@
-import type { Config } from 'tailwindcss'
-
-const config: Config = {
+/** @type {import('tailwindcss').Config} */
+module.exports = {
   darkMode: ['class'],
   content: [
-    './pages/**/*.{ts,tsx}',
-    './components/**/*.{ts,tsx}',
-    './app/**/*.{ts,tsx}',
+    './pages/**/*.{js,ts,jsx,tsx,mdx}',
+    './components/**/*.{js,ts,jsx,tsx,mdx}',
+    './app/**/*.{js,ts,jsx,tsx,mdx}',
   ],
   theme: {
     extend: {
       colors: {
-        // Sistema de colores OdontoApp
         brand: {
           50: '#EFF6FF',
           100: '#DBEAFE',
@@ -19,7 +17,6 @@ const config: Config = {
           700: '#1D4ED8',
           900: '#1E3A8A',
         },
-        // Estados de turno
         appointment: {
           pending: '#F59E0B',
           confirmed: '#16A34A',
@@ -34,12 +31,7 @@ const config: Config = {
         md: 'calc(var(--radius) - 2px)',
         sm: 'calc(var(--radius) - 4px)',
       },
-      fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
-      },
     },
   },
-  plugins: [require('tailwindcss-animate')],
+  plugins: [],
 }
-
-export default config

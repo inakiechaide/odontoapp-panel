@@ -41,14 +41,18 @@
     --input: 217.2 32.6% 17.5%;
     --destructive: 0 62.8% 30.6%;
   }
+
+  * {
+    border-color: hsl(var(--border));
+  }
+
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+  }
 }
 
-@layer base {
-  * { @apply border-border; }
-  body { @apply bg-background text-foreground; }
-}
-
-/* Colores de estado de turnos */
+/* Estados de turnos */
 .status-PENDIENTE    { @apply bg-amber-100 text-amber-800 border-amber-200; }
 .status-CONFIRMADO   { @apply bg-green-100 text-green-800 border-green-200; }
 .status-EN_CURSO     { @apply bg-blue-100 text-blue-800 border-blue-200; }
@@ -56,8 +60,8 @@
 .status-CANCELADO    { @apply bg-red-100 text-red-800 border-red-200; }
 .status-AUSENTE      { @apply bg-gray-100 text-gray-600 border-gray-200; }
 
-/* Scrollbar personalizada */
+/* Scrollbar */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { @apply bg-muted; }
-::-webkit-scrollbar-thumb { @apply bg-muted-foreground/30 rounded-full; }
-::-webkit-scrollbar-thumb:hover { @apply bg-muted-foreground/50; }
+::-webkit-scrollbar-track { background: #f1f5f9; }
+::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 9999px; }
+::-webkit-scrollbar-thumb:hover { background: #64748b; }
