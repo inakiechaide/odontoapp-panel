@@ -4,19 +4,17 @@ import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Sidebar } from '@/components/layout/Sidebar'
 import { Header } from '@/components/layout/Header'
-import { useUIStore } from '@/stores/ui.store'
 import { getAccessToken } from '@/lib/api'
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
-  const user = useUIStore((s) => s.user)
 
   useEffect(() => {
-    // Redirigir si no hay token (protección básica — el middleware maneja el resto)
-    if (!user && !getAccessToken()) {
+    const token = getAccessToken()
+    if (!token) {
       router.push('/auth/login')
     }
-  }, [user, router])
+  }, [router])
 
   return (
     <div className="flex h-screen bg-gray-50 overflow-hidden">

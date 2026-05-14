@@ -9,39 +9,47 @@ interface Notification {
   createdAt: Date
 }
 
+const USER_KEY = 'odontoapp_user'
+
+function loadUser(): User | null {
+  if (typeof window === 'undefined') return null
+  try {
+    const stored = localStorage.getItem(USER_KEY)
+    return stored ? JSON.parse(stored) : null
+  } catch { return null }
+}
+
 interface UIStore {
-  // Auth
   user: User | null
   setUser: (user: User | null) => void
-
-  // Sidebar
   sidebarOpen: boolean
   toggleSidebar: () => void
   setSidebarOpen: (open: boolean) => void
-
-  // Agenda
   selectedDentistId: string | null
   setSelectedDentistId: (id: string | null) => void
   agendaView: 'week' | 'day'
   setAgendaView: (v: 'week' | 'day') => void
   agendaDate: Date
   setAgendaDate: (d: Date) => void
-
-  // Modal activo
   activeModal: string | null
   modalData: Record<string, unknown>
   openModal: (modal: string, data?: Record<string, unknown>) => void
   closeModal: () => void
-
-  // Notificaciones en tiempo real
   notifications: Notification[]
   addNotification: (n: Omit<Notification, 'id' | 'createdAt'>) => void
   removeNotification: (id: string) => void
 }
 
 export const useUIStore = create<UIStore>((set) => ({
-  user: null,
-  setUser: (user) => set({ user }),
+  // Restaurar usuario desde localStorage al recargar
+  user: loadUser(),
+  setUser: (user) => {
+    if (typeof window !== 'undefined') {
+      if (user) localStorage.setItem(USER_KEY, JSON.stringify(user))
+      else localStorage.removeItem(USER_KEY)
+    }
+    set({ user })
+  },
 
   sidebarOpen: true,
   toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
@@ -65,7 +73,7 @@ export const useUIStore = create<UIStore>((set) => ({
       notifications: [
         ...s.notifications,
         { ...n, id: crypto.randomUUID(), createdAt: new Date() },
-      ].slice(-10), // máx 10
+      ].slice(-10),
     })),
   removeNotification: (id) =>
     set((s) => ({ notifications: s.notifications.filter((n) => n.id !== id) })),
