@@ -1,0 +1,11 @@
+{
+  "framework": "nextjs",
+  "buildCommand": "npm run build",
+  "outputDirectory": ".next",
+  "installCommand": "npm install",
+  "env": {
+    "NEXT_PUBLIC_API_URL": "https://odontoapp-api-c8fo.onrender.com/api/v1",
+    "NEXT_PUBLIC_SUPABASE_URL": "https://mwfjtxkybwvnctpflclj.supabase.co",
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im13Zmp0eGt5Ynd2bmN0cGZsY2xqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgyMDg4MDMsImV4cCI6MjA5Mzc4NDgwM30.cmHpEJFB2ZK-QIqxstJza-3C1V9ESoaQNJ9tvDei3rw"
+  }
+}
