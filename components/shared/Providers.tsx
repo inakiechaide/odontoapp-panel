@@ -1,10 +1,18 @@
 'use client'
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { ThemeProvider } from 'next-themes'
 import { Toaster } from 'sonner'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useUIStore } from '@/stores/ui.store'
+
+function StoreHydrator() {
+  const hydrate = useUIStore((s) => s.hydrate)
+  useEffect(() => {
+    hydrate()
+  }, [hydrate])
+  return null
+}
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -22,7 +30,8 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
+      <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
+        <StoreHydrator />
         {children}
         <Toaster
           position="top-right"
@@ -31,7 +40,6 @@ export function Providers({ children }: { children: React.ReactNode }) {
           toastOptions={{ duration: 4000 }}
         />
       </ThemeProvider>
-      <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>
   )
 }

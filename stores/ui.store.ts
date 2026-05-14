@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { User } from '@/types'
+import type { User } from '@/types'
 
 interface Notification {
   id: string
@@ -9,19 +9,11 @@ interface Notification {
   createdAt: Date
 }
 
-const USER_KEY = 'odontoapp_user'
-
-function loadUser(): User | null {
-  if (typeof window === 'undefined') return null
-  try {
-    const stored = localStorage.getItem(USER_KEY)
-    return stored ? JSON.parse(stored) : null
-  } catch { return null }
-}
-
 interface UIStore {
   user: User | null
+  _hydrated: boolean
   setUser: (user: User | null) => void
+  hydrate: () => void
   sidebarOpen: boolean
   toggleSidebar: () => void
   setSidebarOpen: (open: boolean) => void
@@ -40,14 +32,29 @@ interface UIStore {
   removeNotification: (id: string) => void
 }
 
+const USER_KEY = 'odontoapp_user'
+
 export const useUIStore = create<UIStore>((set) => ({
-  // Restaurar usuario desde localStorage al recargar
-  user: loadUser(),
+  // Siempre null en SSR — se hidrata en el cliente con hydrate()
+  user: null,
+  _hydrated: false,
+
+  hydrate: () => {
+    // Solo se llama desde el cliente (useEffect)
+    try {
+      const stored = localStorage.getItem(USER_KEY)
+      const user = stored ? JSON.parse(stored) : null
+      set({ user, _hydrated: true })
+    } catch {
+      set({ _hydrated: true })
+    }
+  },
+
   setUser: (user) => {
-    if (typeof window !== 'undefined') {
+    try {
       if (user) localStorage.setItem(USER_KEY, JSON.stringify(user))
       else localStorage.removeItem(USER_KEY)
-    }
+    } catch { /* SSR */ }
     set({ user })
   },
 
@@ -59,7 +66,7 @@ export const useUIStore = create<UIStore>((set) => ({
   setSelectedDentistId: (id) => set({ selectedDentistId: id }),
   agendaView: 'week',
   setAgendaView: (v) => set({ agendaView: v }),
-  agendaDate: new Date(),
+  agendaDate: new Date(),  // ok - se reinicializa en cliente
   setAgendaDate: (d) => set({ agendaDate: d }),
 
   activeModal: null,
