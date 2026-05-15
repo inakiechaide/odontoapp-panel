@@ -10,7 +10,7 @@ import { useAppointments } from '@/hooks/useAppointments'
 import { formatDate, formatDateTime, INSURANCE_LABELS, STATUS_COLORS, STATUS_LABELS } from '@/lib/utils'
 import { cn } from '@/lib/utils'
 
-type Tab = 'datos' | 'turnos' | 'tratamientos'
+type Tab = 'datos' | 'turnos' | 'tratamientos' | 'odontograma'
 
 export default function PatientDetailPage() {
   const { id } = useParams<{ id: string }>()
