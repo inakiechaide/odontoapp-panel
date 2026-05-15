@@ -25,6 +25,16 @@ export default function PatientDetailPage() {
   const { data: patient, isLoading } = usePatient(id)
   const { data: appointments } = useAppointments({ patientId: id, limit: 20 } as any)
 
+  // Si el id no es un UUID válido (ej: "nuevo"), redirigir
+  if (!isValidUUID) {
+    return (
+      <div className="p-8 text-center text-gray-400">
+        <p>ID de paciente inválido</p>
+        <a href="/dashboard/pacientes" className="text-brand-600 underline mt-2 block">Volver a pacientes</a>
+      </div>
+    )
+  }
+
   if (isLoading) return <div className="p-8 text-center text-gray-400">Cargando...</div>
   if (!patient) return <div className="p-8 text-center text-gray-400">Paciente no encontrado</div>
 

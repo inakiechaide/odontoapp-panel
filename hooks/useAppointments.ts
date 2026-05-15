@@ -52,12 +52,15 @@ export function useAppointments(filters: {
   to?: string
   page?: number
 }) {
+  const isValidId = (id?: string) => !id || /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
+
   return useQuery({
     queryKey: appointmentKeys.list(filters),
     queryFn: async () => {
       const res = await api.get('/appointments', { params: filters })
       return res.data
     },
+    enabled: isValidId(filters.patientId) && isValidId(filters.dentistId),
     staleTime: 30_000,
   })
 }
