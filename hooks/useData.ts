@@ -27,7 +27,7 @@ export function usePatient(id: string) {
       const res = await api.get<Patient>(`/patients/${id}`)
       return res.data
     },
-    enabled: !!id,
+    enabled: !!id && id !== 'nuevo' && /^[0-9a-f-]{36}$/.test(id),
   })
 }
 
@@ -93,7 +93,7 @@ export function useConversation(id: string) {
       const res = await api.get<Conversation>(`/conversations/${id}`)
       return res.data
     },
-    enabled: !!id,
+    enabled: !!id && id !== 'nuevo' && /^[0-9a-f-]{36}$/.test(id),
     refetchInterval: 5_000,
   })
 }

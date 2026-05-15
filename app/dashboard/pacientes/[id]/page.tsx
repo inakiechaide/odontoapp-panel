@@ -14,6 +14,13 @@ type Tab = 'datos' | 'turnos' | 'tratamientos'
 
 export default function PatientDetailPage() {
   const { id } = useParams<{ id: string }>()
+  const router = useRouter()
+
+  // Evitar que la ruta dinámica capture /nuevo
+  if (id === 'nuevo') {
+    router.replace('/dashboard/pacientes/nuevo')
+    return null
+  }
   const [tab, setTab] = useState<Tab>('datos')
   const { data: patient, isLoading } = usePatient(id)
   const { data: appointments } = useAppointments({ patientId: id, limit: 20 } as any)
