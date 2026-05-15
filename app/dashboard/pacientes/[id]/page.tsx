@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useParams, notFound } from 'next/navigation'
+import { useParams, useRouter, notFound } from 'next/navigation'
 import { Odontogram } from '@/components/odontogram/Odontogram'
 import { ArrowLeft, Phone, Mail, Shield, Calendar, Pill, AlertTriangle } from 'lucide-react'
 import Link from 'next/link'
