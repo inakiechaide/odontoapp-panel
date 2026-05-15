@@ -1,9 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { useParams, useRouter, notFound } from 'next/navigation'
+import { useParams } from 'next/navigation'
 import { Odontogram } from '@/components/odontogram/Odontogram'
-import { ArrowLeft, Phone, Mail, Shield, Calendar, Pill, AlertTriangle } from 'lucide-react'
+import { ArrowLeft, Phone, Shield, Pill, AlertTriangle } from 'lucide-react'
 import Link from 'next/link'
 import { usePatient } from '@/hooks/useData'
 import { useAppointments } from '@/hooks/useAppointments'
@@ -12,37 +12,43 @@ import { cn } from '@/lib/utils'
 
 type Tab = 'datos' | 'turnos' | 'tratamientos' | 'odontograma'
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 export default function PatientDetailPage() {
   const { id } = useParams<{ id: string }>()
-  const router = useRouter()
-
-  // Evitar que la ruta dinámica capture /nuevo
-  if (id === 'nuevo') {
-    router.replace('/dashboard/pacientes/nuevo')
-    return null
-  }
   const [tab, setTab] = useState<Tab>('datos')
-  const { data: patient, isLoading } = usePatient(id)
-  const { data: appointments } = useAppointments({ patientId: id, limit: 20 } as any)
 
-  // Si el id no es un UUID válido (ej: "nuevo"), redirigir
+  const isValidUUID = UUID_REGEX.test(id ?? '')
+  const { data: patient, isLoading } = usePatient(isValidUUID ? id : '')
+  const { data: appointments } = useAppointments(
+    isValidUUID ? { patientId: id, limit: 20 } as any : {} as any
+  )
+
   if (!isValidUUID) {
     return (
       <div className="p-8 text-center text-gray-400">
-        <p>ID de paciente inválido</p>
-        <a href="/dashboard/pacientes" className="text-brand-600 underline mt-2 block">Volver a pacientes</a>
+        <p className="text-lg mb-2">ID de paciente inválido</p>
+        <Link href="/dashboard/pacientes" className="text-brand-600 underline">
+          ← Volver a pacientes
+        </Link>
       </div>
     )
   }
 
   if (isLoading) return <div className="p-8 text-center text-gray-400">Cargando...</div>
-  if (!patient) return <div className="p-8 text-center text-gray-400">Paciente no encontrado</div>
+  if (!patient) return (
+    <div className="p-8 text-center text-gray-400">
+      <p className="text-lg mb-2">Paciente no encontrado</p>
+      <Link href="/dashboard/pacientes" className="text-brand-600 underline">
+        ← Volver a pacientes
+      </Link>
+    </div>
+  )
 
   const appts = appointments?.data ?? []
 
   return (
     <div className="space-y-5 max-w-4xl">
-      {/* Header */}
       <div className="flex items-center gap-4">
         <Link href="/dashboard/pacientes"
           className="p-2 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors">
@@ -53,21 +59,17 @@ export default function PatientDetailPage() {
             {patient.nombre[0]}{patient.apellido[0]}
           </div>
           <div>
-            <h1 className="text-xl font-bold text-gray-900">
-              {patient.nombre} {patient.apellido}
-            </h1>
+            <h1 className="text-xl font-bold text-gray-900">{patient.nombre} {patient.apellido}</h1>
             <div className="flex items-center gap-3 mt-1">
               {patient.obraSocial && (
                 <span className="flex items-center gap-1 text-sm text-brand-600">
                   <Shield className="w-3.5 h-3.5" />
-                  {INSURANCE_LABELS[patient.obraSocial]}
-                  {patient.nroAfiliado && ` · ${patient.nroAfiliado}`}
+                  {INSURANCE_LABELS[patient.obraSocial]}{patient.nroAfiliado && ` · ${patient.nroAfiliado}`}
                 </span>
               )}
               {patient.telefonoWhatsapp && (
                 <span className="flex items-center gap-1 text-sm text-gray-500">
-                  <Phone className="w-3.5 h-3.5" />
-                  {patient.telefonoWhatsapp}
+                  <Phone className="w-3.5 h-3.5" />{patient.telefonoWhatsapp}
                 </span>
               )}
             </div>
@@ -75,22 +77,18 @@ export default function PatientDetailPage() {
         </div>
       </div>
 
-      {/* Tabs */}
       <div className="flex gap-1 border-b border-gray-200">
         {(['datos', 'turnos', 'tratamientos', 'odontograma'] as Tab[]).map((t) => (
           <button key={t} onClick={() => setTab(t)}
             className={cn(
-              'px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors capitalize',
-              tab === t
-                ? 'border-brand-600 text-brand-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
+              'px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors',
+              tab === t ? 'border-brand-600 text-brand-600' : 'border-transparent text-gray-500 hover:text-gray-700'
             )}>
             {t === 'datos' ? 'Datos personales' : t === 'turnos' ? 'Historial de turnos' : t === 'tratamientos' ? 'Tratamientos' : 'Odontograma'}
           </button>
         ))}
       </div>
 
-      {/* Tab: Datos */}
       {tab === 'datos' && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-3">
@@ -98,7 +96,7 @@ export default function PatientDetailPage() {
             {[
               ['DNI', patient.dni ?? '—'],
               ['CUIL', patient.cuil ?? '—'],
-              ['Fecha de nacimiento', patient.fechaNacimiento ? formatDate(patient.fechaNacimiento) : '—'],
+              ['Nacimiento', patient.fechaNacimiento ? formatDate(patient.fechaNacimiento) : '—'],
               ['Email', patient.email ?? '—'],
               ['Localidad', patient.localidad ?? '—'],
               ['Provincia', patient.provincia ?? '—'],
@@ -109,14 +107,11 @@ export default function PatientDetailPage() {
               </div>
             ))}
           </div>
-
           <div className="space-y-4">
-            {/* Alergias */}
             {patient.alergias.length > 0 && (
               <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
                 <p className="font-semibold text-amber-800 text-sm flex items-center gap-1.5 mb-2">
-                  <AlertTriangle className="w-4 h-4" />
-                  Alergias
+                  <AlertTriangle className="w-4 h-4" /> Alergias
                 </p>
                 <div className="flex flex-wrap gap-1.5">
                   {patient.alergias.map((a) => (
@@ -125,23 +120,19 @@ export default function PatientDetailPage() {
                 </div>
               </div>
             )}
-
-            {/* Notas médicas */}
             {patient.notasMedicas && (
               <div className="bg-white rounded-xl border border-gray-200 p-4">
                 <p className="font-semibold text-gray-700 text-sm mb-2">Notas médicas</p>
                 <p className="text-sm text-gray-600 whitespace-pre-wrap">{patient.notasMedicas}</p>
               </div>
             )}
-
             <p className="text-xs text-gray-400">
-              Alta: {formatDateTime(patient.createdAt)} · Últ. actualización: {formatDateTime(patient.updatedAt)}
+              Alta: {formatDateTime(patient.createdAt)} · Actualización: {formatDateTime(patient.updatedAt)}
             </p>
           </div>
         </div>
       )}
 
-      {/* Tab: Turnos */}
       {tab === 'turnos' && (
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
           {appts.length === 0 ? (
@@ -173,9 +164,7 @@ export default function PatientDetailPage() {
         </div>
       )}
 
-      {tab === 'odontograma' && (
-        <Odontogram />
-      )}
+      {tab === 'odontograma' && <Odontogram />}
 
       {tab === 'tratamientos' && (
         <div className="bg-white rounded-xl border border-gray-200 p-8 text-center text-gray-400">
