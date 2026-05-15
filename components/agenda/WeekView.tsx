@@ -140,7 +140,7 @@ export function WeekView() {
           </button>
         </div>
         <button
-          onClick={() => openModal('new-appointment')}
+          onClick={(e) => { e.preventDefault(); e.stopPropagation(); openModal('new-appointment') }}
           className="flex items-center gap-2 px-4 py-2 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700 transition-colors"
         >
           <Plus className="w-4 h-4" />
