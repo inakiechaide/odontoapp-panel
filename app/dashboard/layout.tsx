@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Sidebar } from '@/components/layout/Sidebar'
 import { Header } from '@/components/layout/Header'
 import { getAccessToken } from '@/lib/api'
+import { ModalManager } from '@/components/shared/ModalManager'
 import { useUIStore } from '@/stores/ui.store'
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -38,6 +39,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <main className="flex-1 overflow-y-auto p-6">
           {children}
         </main>
+      <ModalManager />
       </div>
     </div>
   )

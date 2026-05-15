@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useParams } from 'next/navigation'
+import { Odontogram } from '@/components/odontogram/Odontogram'
 import { ArrowLeft, Phone, Mail, Shield, Calendar, Pill, AlertTriangle } from 'lucide-react'
 import Link from 'next/link'
 import { usePatient } from '@/hooks/useData'
@@ -59,7 +60,7 @@ export default function PatientDetailPage() {
 
       {/* Tabs */}
       <div className="flex gap-1 border-b border-gray-200">
-        {(['datos', 'turnos', 'tratamientos'] as Tab[]).map((t) => (
+        {(['datos', 'turnos', 'tratamientos', 'odontograma'] as Tab[]).map((t) => (
           <button key={t} onClick={() => setTab(t)}
             className={cn(
               'px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors capitalize',
@@ -67,7 +68,7 @@ export default function PatientDetailPage() {
                 ? 'border-brand-600 text-brand-600'
                 : 'border-transparent text-gray-500 hover:text-gray-700'
             )}>
-            {t === 'datos' ? 'Datos personales' : t === 'turnos' ? 'Historial de turnos' : 'Tratamientos'}
+            {t === 'datos' ? 'Datos personales' : t === 'turnos' ? 'Historial de turnos' : t === 'tratamientos' ? 'Tratamientos' : 'Odontograma'}
           </button>
         ))}
       </div>
@@ -153,6 +154,10 @@ export default function PatientDetailPage() {
             </table>
           )}
         </div>
+      )}
+
+      {tab === 'odontograma' && (
+        <Odontogram />
       )}
 
       {tab === 'tratamientos' && (
