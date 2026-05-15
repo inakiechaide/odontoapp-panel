@@ -93,7 +93,8 @@ function DayColumn({ date, dentistId, onSlotClick, onAppointmentClick }: DayColu
 }
 
 export function WeekView() {
-  const { agendaDate, setAgendaDate, selectedDentistId, openModal } = useUIStore()
+  const { agendaDate: agendaDateRaw, setAgendaDate, selectedDentistId, openModal } = useUIStore()
+  const agendaDate = agendaDateRaw ?? new Date()
   const [selectedAppt, setSelectedAppt] = useState<string | null>(null)
 
   const weekStart = startOfWeek(agendaDate, { weekStartsOn: 1 }) // Lunes

@@ -21,7 +21,7 @@ interface UIStore {
   setSelectedDentistId: (id: string | null) => void
   agendaView: 'week' | 'day'
   setAgendaView: (v: 'week' | 'day') => void
-  agendaDate: Date
+  agendaDate: Date | null   // null en SSR, Date en cliente
   setAgendaDate: (d: Date) => void
   activeModal: string | null
   modalData: Record<string, unknown>
@@ -35,18 +35,17 @@ interface UIStore {
 const USER_KEY = 'odontoapp_user'
 
 export const useUIStore = create<UIStore>((set) => ({
-  // Siempre null en SSR — se hidrata en el cliente con hydrate()
+  // null en SSR — se asigna en hydrate() del cliente
   user: null,
   _hydrated: false,
 
   hydrate: () => {
-    // Solo se llama desde el cliente (useEffect)
     try {
       const stored = localStorage.getItem(USER_KEY)
       const user = stored ? JSON.parse(stored) : null
-      set({ user, _hydrated: true })
+      set({ user, _hydrated: true, agendaDate: new Date() })
     } catch {
-      set({ _hydrated: true })
+      set({ _hydrated: true, agendaDate: new Date() })
     }
   },
 
@@ -66,7 +65,7 @@ export const useUIStore = create<UIStore>((set) => ({
   setSelectedDentistId: (id) => set({ selectedDentistId: id }),
   agendaView: 'week',
   setAgendaView: (v) => set({ agendaView: v }),
-  agendaDate: new Date(),  // ok - se reinicializa en cliente
+  agendaDate: null,  // ← null en SSR, se setea en hydrate()
   setAgendaDate: (d) => set({ agendaDate: d }),
 
   activeModal: null,
