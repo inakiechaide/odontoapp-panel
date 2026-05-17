@@ -5,7 +5,9 @@ import { useParams } from 'next/navigation'
 import { Odontogram } from '@/components/odontogram/Odontogram'
 import { ArrowLeft, Phone, Shield, Pill, AlertTriangle } from 'lucide-react'
 import Link from 'next/link'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { usePatient } from '@/hooks/useData'
+import api from '@/lib/api'
 import { useAppointments } from '@/hooks/useAppointments'
 import { formatDate, formatDateTime, INSURANCE_LABELS, STATUS_COLORS, STATUS_LABELS } from '@/lib/utils'
 import { cn } from '@/lib/utils'
@@ -167,9 +169,78 @@ export default function PatientDetailPage() {
       {tab === 'odontograma' && <Odontogram />}
 
       {tab === 'tratamientos' && (
+        <TratamientosTab patientId={id} />
+      )}
+    </div>
+  )
+}
+
+
+function TratamientosTab({ patientId }: { patientId: string }) {
+  const [showForm, setShowForm] = useState(false)
+  const qc = useQueryClient()
+  
+  const { data: treatments } = useQuery({
+    queryKey: ['treatments'],
+    queryFn: async () => { const r = await api.get('/treatments'); return r.data as any[] },
+  })
+
+  const { data: patientTreatments, refetch } = useQuery({
+    queryKey: ['patient-treatments', patientId],
+    queryFn: async () => {
+      try {
+        const r = await api.get(`/patients/${patientId}/treatments`)
+        return r.data as any[]
+      } catch { return [] }
+    },
+    enabled: !!patientId,
+  })
+
+  const input = 'px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 w-full'
+
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <h3 className="font-semibold text-gray-800">Historial de tratamientos</h3>
+        <button onClick={() => setShowForm(!showForm)}
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-brand-600 text-white text-sm rounded-lg hover:bg-brand-700">
+          + Agregar
+        </button>
+      </div>
+
+      {(!patientTreatments || patientTreatments.length === 0) && !showForm && (
         <div className="bg-white rounded-xl border border-gray-200 p-8 text-center text-gray-400">
           <Pill className="w-10 h-10 mx-auto mb-2 opacity-40" />
-          <p>Módulo de tratamientos — próximamente</p>
+          <p>Sin tratamientos registrados</p>
+        </div>
+      )}
+
+      {patientTreatments && patientTreatments.length > 0 && (
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <table className="w-full text-sm">
+            <thead><tr className="border-b border-gray-100 bg-gray-50">
+              <th className="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase">Tratamiento</th>
+              <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Piezas</th>
+              <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Estado</th>
+              <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Fecha</th>
+            </tr></thead>
+            <tbody className="divide-y divide-gray-50">
+              {patientTreatments.map((t: any) => (
+                <tr key={t.id}>
+                  <td className="px-5 py-3 font-medium text-gray-700">{t.treatment?.nombre ?? t.descripcion ?? '—'}</td>
+                  <td className="px-4 py-3 text-gray-500 text-xs">{t.piezasDentarias?.join(', ') || '—'}</td>
+                  <td className="px-4 py-3">
+                    <span className={cn('px-2 py-0.5 rounded-full text-xs font-medium',
+                      t.status === 'COMPLETADO' ? 'bg-green-100 text-green-700' :
+                      t.status === 'EN_CURSO' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600')}>
+                      {t.status}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-gray-400 text-xs">{t.fechaInicio ? new Date(t.fechaInicio).toLocaleDateString('es-AR') : '—'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
     </div>
