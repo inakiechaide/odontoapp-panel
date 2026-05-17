@@ -298,47 +298,151 @@ export default function PatientDetailPage() {
 }
 
 function TratamientosTab({ patientId }: { patientId: string }) {
+  const qc = useQueryClient()
   const [showForm, setShowForm] = useState(false)
-  const [formData, setFormData] = useState({ descripcion: '', status: 'EN_CURSO', piezas: '' })
+  const [form, setForm] = useState({ treatmentId: '', status: 'EN_CURSO', notasClinicas: '', presupuestoArs: '', dientes: '' })
 
-  const { data: tratamientos, refetch } = useQuery({
-    queryKey: ['patient-appointments-treatments', patientId],
-    queryFn: async () => {
-      const res = await api.get(`/appointments?patientId=${patientId}&limit=100`)
-      return (res.data?.data ?? []).filter((a: any) => a.tipoTratamiento)
-    },
+  const { data: catalogo } = useQuery({
+    queryKey: ['treatments-catalog'],
+    queryFn: async () => { const r = await api.get('/treatments'); return r.data as any[] },
+    staleTime: 300_000,
+  })
+
+  const { data: tratamientos, isLoading } = useQuery({
+    queryKey: ['patient-treatments', patientId],
+    queryFn: async () => { const r = await api.get(`/treatments/patient/${patientId}`); return r.data as any[] },
     enabled: !!patientId,
   })
+
+  const createMut = useMutation({
+    mutationFn: (d: any) => api.post(`/treatments/patient/${patientId}`, d),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['patient-treatments', patientId] })
+      setShowForm(false)
+      setForm({ treatmentId: '', status: 'EN_CURSO', notasClinicas: '', presupuestoArs: '', dientes: '' })
+      toast.success('Tratamiento registrado')
+    },
+    onError: (e: any) => toast.error(e?.response?.data?.message || 'Error al registrar'),
+  })
+
+  const updateMut = useMutation({
+    mutationFn: ({ id, ...d }: any) => api.put(`/treatments/${id}`, d),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['patient-treatments', patientId] }); toast.success('Actualizado') },
+  })
+
+  const deleteMut = useMutation({
+    mutationFn: (id: string) => api.delete(`/treatments/${id}`),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['patient-treatments', patientId] }); toast.success('Eliminado') },
+  })
+
+  const handleCreate = () => {
+    if (!form.treatmentId) return toast.error('Seleccioná un tratamiento')
+    createMut.mutate({
+      treatmentId: form.treatmentId,
+      status: form.status,
+      notasClinicas: form.notasClinicas || undefined,
+      presupuestoArs: form.presupuestoArs ? Number(form.presupuestoArs) : undefined,
+      dientesAfectados: form.dientes ? form.dientes.split(',').map(s => parseInt(s.trim())).filter(Boolean) : [],
+    })
+  }
+
+  const STATUS_OPTS = [
+    { v: 'EN_CURSO', l: 'En curso' },
+    { v: 'COMPLETADO', l: 'Completado' },
+    { v: 'PAUSADO', l: 'Pausado' },
+    { v: 'CANCELADO', l: 'Cancelado' },
+  ]
+
+  const input = 'px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 w-full'
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="font-semibold text-gray-800">Tratamientos realizados</h3>
+        <h3 className="font-semibold text-gray-800">Tratamientos clínicos</h3>
+        <button onClick={() => setShowForm(!showForm)}
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-brand-600 text-white text-sm rounded-lg hover:bg-brand-700">
+          <Pill className="w-3.5 h-3.5" /> Registrar tratamiento
+        </button>
       </div>
 
+      {showForm && (
+        <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-3">
+          <h4 className="font-medium text-gray-800 text-sm">Nuevo tratamiento</h4>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="col-span-2">
+              <label className="block text-xs text-gray-500 mb-1">Tratamiento *</label>
+              <select value={form.treatmentId} onChange={e => setForm(f => ({...f, treatmentId: e.target.value}))} className={input}>
+                <option value="">Seleccioná...</option>
+                {catalogo?.map((t: any) => <option key={t.id} value={t.id}>{t.nombre}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Estado</label>
+              <select value={form.status} onChange={e => setForm(f => ({...f, status: e.target.value}))} className={input}>
+                {STATUS_OPTS.map(o => <option key={o.v} value={o.v}>{o.l}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Presupuesto $</label>
+              <input type="number" value={form.presupuestoArs} onChange={e => setForm(f => ({...f, presupuestoArs: e.target.value}))} className={input} placeholder="0.00" />
+            </div>
+            <div className="col-span-2">
+              <label className="block text-xs text-gray-500 mb-1">Piezas dentarias (números FDI, separados por coma)</label>
+              <input value={form.dientes} onChange={e => setForm(f => ({...f, dientes: e.target.value}))} className={input} placeholder="11, 21, 36..." />
+            </div>
+            <div className="col-span-2">
+              <label className="block text-xs text-gray-500 mb-1">Notas clínicas</label>
+              <textarea value={form.notasClinicas} onChange={e => setForm(f => ({...f, notasClinicas: e.target.value}))} rows={2} className={`${input} resize-none`} />
+            </div>
+          </div>
+          <div className="flex gap-2 justify-end">
+            <button onClick={() => setShowForm(false)} className="px-4 py-2 border border-gray-300 rounded-lg text-sm">Cancelar</button>
+            <button onClick={handleCreate} disabled={createMut.isPending} className="px-4 py-2 bg-brand-600 text-white rounded-lg text-sm disabled:opacity-60">
+              {createMut.isPending ? 'Guardando...' : 'Guardar'}
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-        {!tratamientos || tratamientos.length === 0 ? (
+        {isLoading ? (
+          <div className="p-6 text-center text-gray-400 text-sm">Cargando...</div>
+        ) : !tratamientos || tratamientos.length === 0 ? (
           <div className="p-8 text-center text-gray-400">
             <Pill className="w-10 h-10 mx-auto mb-2 opacity-40" />
             <p>Sin tratamientos registrados</p>
-            <p className="text-xs mt-1">Los tratamientos se registran al crear un turno</p>
           </div>
         ) : (
           <table className="w-full text-sm">
             <thead><tr className="border-b border-gray-100 bg-gray-50">
               <th className="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase">Tratamiento</th>
-              <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Fecha</th>
-              <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Estado turno</th>
+              <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Piezas</th>
+              <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Estado</th>
+              <th className="text-right px-4 py-3 text-xs font-medium text-gray-500 uppercase">Presupuesto</th>
+              <th className="px-4 py-3 w-10"/>
             </tr></thead>
             <tbody className="divide-y divide-gray-50">
-              {tratamientos.map((a: any) => (
-                <tr key={a.id} className="hover:bg-gray-50">
-                  <td className="px-5 py-3 font-medium text-gray-700">{a.tipoTratamiento}</td>
-                  <td className="px-4 py-3 text-gray-500 text-sm">{formatDateTime(a.fechaHora)}</td>
+              {tratamientos.map((t: any) => (
+                <tr key={t.id} className="hover:bg-gray-50">
+                  <td className="px-5 py-3 font-medium text-gray-700">
+                    {t.treatment?.nombre ?? '—'}
+                    {t.notasClinicas && <p className="text-xs text-gray-400 mt-0.5">{t.notasClinicas}</p>}
+                  </td>
+                  <td className="px-4 py-3 text-gray-500 text-xs">{t.dientesAfectados?.join(', ') || '—'}</td>
                   <td className="px-4 py-3">
-                    <span className={cn('px-2 py-0.5 rounded-full text-xs font-medium border', (STATUS_COLORS as any)[a.status] ?? 'bg-gray-100')}>
-                      {(STATUS_LABELS as any)[a.status] ?? a.status}
-                    </span>
+                    <select
+                      value={t.status}
+                      onChange={e => updateMut.mutate({ id: t.id, status: e.target.value })}
+                      className="text-xs border border-gray-200 rounded px-2 py-1 focus:outline-none"
+                    >
+                      {STATUS_OPTS.map(o => <option key={o.v} value={o.v}>{o.l}</option>)}
+                    </select>
+                  </td>
+                  <td className="px-4 py-3 text-right text-gray-600">
+                    {t.presupuestoArs ? `$${Number(t.presupuestoArs).toLocaleString('es-AR')}` : '—'}
+                  </td>
+                  <td className="px-4 py-3">
+                    <button onClick={() => deleteMut.mutate(t.id)} className="text-red-400 hover:text-red-600">✕</button>
                   </td>
                 </tr>
               ))}
