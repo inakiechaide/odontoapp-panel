@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard, Calendar, Users, MessageSquare,
   Package, Shield, Settings, LogOut, Stethoscope,
-  ChevronLeft, ChevronRight
+  ChevronLeft, ChevronRight, Bell
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useUIStore } from '@/stores/ui.store'
@@ -17,6 +17,7 @@ const navItems = [
   { href: '/dashboard/agenda', icon: Calendar, label: 'Agenda' },
   { href: '/dashboard/pacientes', icon: Users, label: 'Pacientes' },
   { href: '/dashboard/inbox', icon: MessageSquare, label: 'WhatsApp', badge: true },
+  { href: '/dashboard/recordatorios', icon: Bell, label: 'Recordatorios' },
   { href: '/dashboard/inventario', icon: Package, label: 'Inventario' },
   { href: '/dashboard/obras-sociales', icon: Shield, label: 'Obras Sociales' },
   { href: '/dashboard/configuracion', icon: Settings, label: 'Configuración' },
