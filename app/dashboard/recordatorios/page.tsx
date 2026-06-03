@@ -55,10 +55,10 @@ export default function RecordatoriosPage() {
   })
 
   const runMut = useMutation({
-    mutationFn: () => api.post('/reminders/run'),
+    mutationFn: (dias: number) => api.post('/reminders/run', { dias }),
     onSuccess: (res: any) => {
       const n = res?.data?.enviados ?? 0
-      toast.success(n > 0 ? `${n} recordatorio(s) enviado(s)` : 'No hay turnos para mañana (o ya se enviaron)')
+      toast.success(n > 0 ? `${n} recordatorio(s) enviado(s)` : 'No hay turnos para esa fecha (o ya se enviaron)')
     },
     onError: (e: any) => toast.error(e?.response?.data?.message || 'Error al enviar'),
   })
@@ -148,7 +148,7 @@ export default function RecordatoriosPage() {
       </div>
 
       {/* Acciones */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 flex-wrap">
         <button
           onClick={handleSave}
           disabled={saveMut.isPending}
@@ -157,20 +157,23 @@ export default function RecordatoriosPage() {
           <Save className="w-4 h-4" /> {saveMut.isPending ? 'Guardando...' : 'Guardar configuración'}
         </button>
         <button
-          onClick={() => runMut.mutate()}
+          onClick={() => runMut.mutate(0)}
           disabled={runMut.isPending}
           className="flex items-center gap-2 px-4 py-2.5 border border-green-300 text-green-700 rounded-xl text-sm font-medium hover:bg-green-50 disabled:opacity-60"
         >
-          {runMut.isPending ? (
-            <><div className="w-4 h-4 border-2 border-green-600 border-t-transparent rounded-full animate-spin" /> Enviando...</>
-          ) : (
-            <><Send className="w-4 h-4" /> Enviar ahora (prueba)</>
-          )}
+          <Send className="w-4 h-4" /> Probar con turnos de HOY
+        </button>
+        <button
+          onClick={() => runMut.mutate(1)}
+          disabled={runMut.isPending}
+          className="flex items-center gap-2 px-4 py-2.5 border border-green-300 text-green-700 rounded-xl text-sm font-medium hover:bg-green-50 disabled:opacity-60"
+        >
+          <Send className="w-4 h-4" /> Probar con turnos de MAÑANA
         </button>
       </div>
 
       <p className="text-xs text-gray-400">
-        "Enviar ahora" manda inmediatamente los recordatorios de los turnos de mañana, sin esperar a la hora configurada (útil para probar).
+        El envío automático manda cada día, a la hora configurada, los recordatorios de los turnos del <strong>día siguiente</strong>. Los botones de prueba envían al instante sin esperar la hora: usá "HOY" para verificar con turnos cargados para hoy.
       </p>
     </div>
   )
