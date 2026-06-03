@@ -55,7 +55,7 @@ export default function RecordatoriosPage() {
   })
 
   const runMut = useMutation({
-    mutationFn: (dias: number) => api.post('/reminders/run', { dias }),
+    mutationFn: (dias: number) => api.post('/reminders/run', { dias, forzar: true }),
     onSuccess: (res: any) => {
       const n = res?.data?.enviados ?? 0
       toast.success(n > 0 ? `${n} recordatorio(s) enviado(s)` : 'No hay turnos para esa fecha (o ya se enviaron)')
