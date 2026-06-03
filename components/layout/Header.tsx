@@ -1,20 +1,27 @@
 'use client'
 
 import { Bell, Search } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useUIStore } from '@/stores/ui.store'
 import { formatDate } from '@/lib/utils'
 
 export function Header() {
   const { user, notifications } = useUIStore()
   const [searchOpen, setSearchOpen] = useState(false)
+  const [hoy, setHoy] = useState('')
   const unread = notifications.length
+
+  // La fecha se calcula solo en el cliente: evita el mismatch de hidratación
+  // (el servidor está en UTC y el cliente en hora argentina → distinto día de noche)
+  useEffect(() => {
+    setHoy(formatDate(new Date(), "EEEE d 'de' MMMM yyyy"))
+  }, [])
 
   return (
     <header className="h-14 bg-white border-b border-gray-200 flex items-center px-6 gap-4 flex-shrink-0">
       {/* Fecha */}
-      <span className="text-sm text-gray-500 hidden sm:block">
-        {formatDate(new Date(), "EEEE d 'de' MMMM yyyy")}
+      <span className="text-sm text-gray-500 hidden sm:block" suppressHydrationWarning>
+        {hoy}
       </span>
 
       <div className="flex-1" />
