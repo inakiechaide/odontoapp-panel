@@ -1,7 +1,7 @@
 // ── Enums (espejo del backend) ────────────────────────────────────────────────
 
 export type UserRole = 'ADMIN' | 'DENTIST' | 'RECEPTIONIST' | 'ASSISTANT'
-export type AppointmentStatus = 'PENDIENTE' | 'CONFIRMADO' | 'EN_CURSO' | 'COMPLETADO' | 'CANCELADO' | 'AUSENTE'
+export type AppointmentStatus = 'PENDIENTE' | 'CONFIRMADO' | 'EN_CURSO' | 'COMPLETADO' | 'CANCELADO' | 'AUSENTE' | 'ASISTIO' | 'LLEGO_TARDE' | 'AUSENTE_CON_AVISO'
 export type ConversationStatus = 'BOT' | 'HUMANO' | 'CERRADO' | 'SPAM'
 export type TreatmentStatus = 'PENDIENTE' | 'EN_CURSO' | 'COMPLETADO' | 'CANCELADO' | 'PAUSADO'
 export type MovementType = 'ENTRADA' | 'SALIDA' | 'CONSUMO' | 'AJUSTE' | 'VENCIMIENTO'
