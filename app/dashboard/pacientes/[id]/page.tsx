@@ -12,8 +12,9 @@ import { formatDate, formatDateTime, INSURANCE_LABELS, STATUS_COLORS, STATUS_LAB
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import api from '@/lib/api'
+import { EstudiosTab } from '@/components/patients/EstudiosTab'
 
-type Tab = 'datos' | 'turnos' | 'tratamientos' | 'odontograma'
+type Tab = 'datos' | 'turnos' | 'tratamientos' | 'estudios' | 'odontograma'
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -61,6 +62,7 @@ export default function PatientDetailPage() {
       planObraSocial: patient.planObraSocial ?? '',
       localidad: patient.localidad ?? '',
       provincia: patient.provincia ?? '',
+      direccion: patient.direccion ?? '',
       alergias: patient.alergias?.join(', ') ?? '',
       notasMedicas: patient.notasMedicas ?? '',
     })
@@ -97,6 +99,7 @@ export default function PatientDetailPage() {
         planObraSocial: form.planObraSocial || undefined,
         localidad: form.localidad || undefined,
         provincia: form.provincia || undefined,
+        direccion: form.direccion || undefined,
         alergias: form.alergias ? form.alergias.split(',').map(s => s.trim()).filter(Boolean) : [],
         notasMedicas: form.notasMedicas || undefined,
       } as any)
@@ -145,11 +148,11 @@ export default function PatientDetailPage() {
 
       {/* Tabs */}
       <div className="flex gap-1 border-b border-gray-200">
-        {(['datos', 'turnos', 'tratamientos', 'odontograma'] as Tab[]).map(t => (
+        {(['datos', 'turnos', 'tratamientos', 'estudios', 'odontograma'] as Tab[]).map(t => (
           <button key={t} onClick={() => setTab(t)}
             className={cn('px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors',
               tab === t ? 'border-brand-600 text-brand-600' : 'border-transparent text-gray-500 hover:text-gray-700')}>
-            {t === 'datos' ? 'Datos personales' : t === 'turnos' ? 'Historial de turnos' : t === 'tratamientos' ? 'Tratamientos' : 'Odontograma'}
+            {t === 'datos' ? 'Datos personales' : t === 'turnos' ? 'Historial de turnos' : t === 'tratamientos' ? 'Tratamientos' : t === 'estudios' ? 'Estudios y fotos' : 'Odontograma'}
           </button>
         ))}
       </div>
@@ -182,7 +185,7 @@ export default function PatientDetailPage() {
               {[
                 ['Nombre', 'nombre'], ['Apellido', 'apellido'],
                 ['DNI', 'dni'], ['Email', 'email'],
-                ['WhatsApp', 'telefonoWhatsapp'], ['Localidad', 'localidad'], ['Provincia', 'provincia'],
+                ['WhatsApp', 'telefonoWhatsapp'], ['Dirección', 'direccion'], ['Localidad', 'localidad'], ['Provincia', 'provincia'],
               ].map(([label, key]) => (
                 <div key={key} className="flex flex-col gap-1">
                   <span className="text-xs text-gray-400 font-medium">{label}</span>
@@ -279,6 +282,8 @@ export default function PatientDetailPage() {
 
       {/* TRATAMIENTOS */}
       {tab === 'tratamientos' && <TratamientosTab patientId={id} />}
+
+      {tab === 'estudios' && <EstudiosTab patientId={id} />}
 
       {/* ODONTOGRAMA */}
       {tab === 'odontograma' && (

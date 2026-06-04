@@ -23,6 +23,7 @@ const patientSchema = z.object({
     .optional().or(z.literal('')),
   email: z.string().email('Email inválido').optional().or(z.literal('')),
   fechaNacimiento: z.string().optional(),
+  direccion: z.string().optional(),
   localidad: z.string().optional(),
   provincia: z.string().optional(),
   obraSocial: z.string().optional(),
@@ -58,6 +59,7 @@ export function PatientForm({ defaultValues, onSubmit, isLoading }: PatientFormP
       telefonoWhatsapp: defaultValues?.telefonoWhatsapp ?? '',
       email: defaultValues?.email ?? '',
       fechaNacimiento: defaultValues?.fechaNacimiento?.split('T')[0] ?? '',
+      direccion: defaultValues?.direccion ?? '',
       localidad: defaultValues?.localidad ?? '',
       provincia: defaultValues?.provincia ?? 'Buenos Aires',
       obraSocial: defaultValues?.obraSocial ?? '',
@@ -149,6 +151,18 @@ export function PatientForm({ defaultValues, onSubmit, isLoading }: PatientFormP
         <div>
           <label className={labelClass}>Localidad</label>
           <input {...register('localidad')} className={inputClass} placeholder="San Isidro" />
+        </div>
+      </div>
+
+      {/* Dirección y provincia */}
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className={labelClass}>Dirección</label>
+          <input {...register('direccion')} className={inputClass} placeholder="Av. Siempre Viva 742" />
+        </div>
+        <div>
+          <label className={labelClass}>Provincia</label>
+          <input {...register('provincia')} className={inputClass} placeholder="Buenos Aires" />
         </div>
       </div>
 
