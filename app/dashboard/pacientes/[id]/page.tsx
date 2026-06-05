@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query'
-import { Odontogram, type ToothState } from '@/components/odontogram/Odontogram'
+import { Odontogram, type OdontogramMark } from '@/components/odontogram/Odontogram'
 import { ArrowLeft, Phone, Shield, AlertTriangle, Edit2, Check, X, Pill, Save } from 'lucide-react'
 import Link from 'next/link'
 import { usePatient, useUpdatePatient } from '@/hooks/useData'
@@ -20,20 +20,14 @@ const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12
 
 const INSURANCE_OPTIONS = Object.entries(INSURANCE_LABELS)
 
-// Guardar odontograma en localStorage (por patientId)
-function loadOdontogram(patientId: string): Record<number, ToothState> {
-  try { return JSON.parse(localStorage.getItem(`odontogram_${patientId}`) ?? '{}') } catch { return {} }
-}
-function saveOdontogram(patientId: string, data: Record<number, ToothState>) {
-  try { localStorage.setItem(`odontogram_${patientId}`, JSON.stringify(data)) } catch {}
-}
-
 export default function PatientDetailPage() {
   const { id } = useParams<{ id: string }>()
   const [tab, setTab] = useState<Tab>('datos')
   const [editing, setEditing] = useState(false)
   const [form, setForm] = useState<Record<string, string>>({})
-  const [odontogramData, setOdontogramData] = useState<Record<number, ToothState>>({})
+  const [odontogramData, setOdontogramData] = useState<OdontogramMark[]>([])
+  const [odontogramDirty, setOdontogramDirty] = useState(false)
+  const [savingOdo, setSavingOdo] = useState(false)
 
   const isValidUUID = UUID_REGEX.test(id ?? '')
   const { data: patient, isLoading } = usePatient(isValidUUID ? id : '')
@@ -42,9 +36,12 @@ export default function PatientDetailPage() {
     isValidUUID ? { patientId: id, limit: 50 } as any : {} as any
   )
 
-  // Cargar odontograma desde localStorage al montar
+  // Cargar odontograma desde el servidor
   useEffect(() => {
-    if (isValidUUID) setOdontogramData(loadOdontogram(id))
+    if (!isValidUUID) return
+    api.get(`/patients/${id}/odontogram`)
+      .then(res => setOdontogramData(res.data ?? []))
+      .catch(() => {})
   }, [id, isValidUUID])
 
   // Cargar form cuando llega el paciente
@@ -110,9 +107,22 @@ export default function PatientDetailPage() {
     }
   }
 
-  const handleOdontogramChange = (data: Record<number, ToothState>) => {
+  const handleOdontogramChange = (data: OdontogramMark[]) => {
     setOdontogramData(data)
-    saveOdontogram(id, data)
+    setOdontogramDirty(true)
+  }
+
+  const handleOdontogramSave = async () => {
+    setSavingOdo(true)
+    try {
+      await api.put(`/patients/${id}/odontogram`, { marks: odontogramData })
+      setOdontogramDirty(false)
+      toast.success('Odontograma guardado')
+    } catch {
+      toast.error('No se pudo guardar el odontograma')
+    } finally {
+      setSavingOdo(false)
+    }
   }
 
   return (
@@ -289,10 +299,10 @@ export default function PatientDetailPage() {
       {tab === 'odontograma' && (
         <div>
           <div className="mb-3 flex items-center justify-between">
-            <p className="text-sm text-gray-500">Los cambios se guardan automáticamente en este dispositivo</p>
-            <button onClick={() => { saveOdontogram(id, odontogramData); toast.success('Odontograma guardado') }}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-brand-600 text-white text-sm rounded-lg hover:bg-brand-700">
-              <Save className="w-3.5 h-3.5" /> Guardar
+            <p className="text-sm text-gray-500">{odontogramDirty ? 'Tenés cambios sin guardar' : 'Odontograma al día'}</p>
+            <button onClick={handleOdontogramSave} disabled={savingOdo || !odontogramDirty}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-brand-600 text-white text-sm rounded-lg hover:bg-brand-700 disabled:opacity-50">
+              <Save className="w-3.5 h-3.5" /> {savingOdo ? 'Guardando...' : 'Guardar'}
             </button>
           </div>
           <Odontogram value={odontogramData} onChange={handleOdontogramChange} />

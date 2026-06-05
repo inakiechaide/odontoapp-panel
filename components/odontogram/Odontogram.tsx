@@ -1,364 +1,257 @@
 'use client'
 
-import { useState } from 'react'
-import { cn } from '@/lib/utils'
+import { useState, useEffect } from 'react'
 
-// ── Sistema FDI (ISO 3950) — Estándar argentino ───────────────────
-// Cuadrantes permanentes: 1=sup.derecho, 2=sup.izquierdo, 3=inf.izquierdo, 4=inf.derecho
-// Cuadrantes deciduos:    5=sup.derecho, 6=sup.izquierdo, 7=inf.izquierdo, 8=inf.derecho
+// ── Tipos ─────────────────────────────────────────────────────────
+export type Cara = 'O' | 'V' | 'L' | 'M' | 'D' | 'TODO'
+export type Grupo = 'existente' | 'por_hacer' | 'realizado'
 
-export type ToothCondition =
-  | 'SANO'           // Blanco
-  | 'CARIES'         // Rojo
-  | 'OBTURADO'       // Azul - restauración
-  | 'EXTRAIDO'       // X negra
-  | 'AUSENTE'        // X negra (congénito)
-  | 'CORONA'         // Amarillo - corona/prótesis
-  | 'IMPLANTE'       // Verde
-  | 'ENDODONCIA'     // Naranja
-  | 'FRACTURA'       // Línea diagonal
-  | 'SELLANTE'       // Celeste
-
-export type ToothFace = 'V' | 'L' | 'M' | 'D' | 'O' // Vestibular, Lingual, Mesial, Distal, Oclusal/Incisal
-
-export interface ToothState {
-  condition: ToothCondition
-  faces?: Partial<Record<ToothFace, ToothCondition>>
-  notes?: string
+export interface OdontogramMark {
+  diente: number
+  cara: Cara
+  grupo: Grupo
+  tipo?: string
 }
 
-interface ToothData {
-  number: number    // FDI number e.g. 11, 36, 48
-  name: string      // Clinical name
-  type: 'incisor' | 'canine' | 'premolar' | 'molar'
+// ── Colores por grupo (convención del consultorio) ───────────────
+const GRUPO_COLOR: Record<Grupo, string> = {
+  existente: '#dc2626', // rojo: ya hecho / preexistente / ausencias
+  por_hacer: '#2563eb', // azul: por realizarse
+  realizado: '#16a34a', // verde: lo realizado por el profesional
+}
+const GRUPO_LABEL: Record<Grupo, string> = {
+  existente: 'Existente (rojo)',
+  por_hacer: 'Por hacer (azul)',
+  realizado: 'Realizado (verde)',
 }
 
-// Dentición permanente FDI
-const UPPER_RIGHT: ToothData[] = [
-  { number: 18, name: 'Molar del juicio', type: 'molar' },
-  { number: 17, name: 'Segundo molar', type: 'molar' },
-  { number: 16, name: 'Primer molar', type: 'molar' },
-  { number: 15, name: 'Segundo premolar', type: 'premolar' },
-  { number: 14, name: 'Primer premolar', type: 'premolar' },
-  { number: 13, name: 'Canino', type: 'canine' },
-  { number: 12, name: 'Incisivo lateral', type: 'incisor' },
-  { number: 11, name: 'Incisivo central', type: 'incisor' },
-]
-const UPPER_LEFT: ToothData[] = [
-  { number: 21, name: 'Incisivo central', type: 'incisor' },
-  { number: 22, name: 'Incisivo lateral', type: 'incisor' },
-  { number: 23, name: 'Canino', type: 'canine' },
-  { number: 24, name: 'Primer premolar', type: 'premolar' },
-  { number: 25, name: 'Segundo premolar', type: 'premolar' },
-  { number: 26, name: 'Primer molar', type: 'molar' },
-  { number: 27, name: 'Segundo molar', type: 'molar' },
-  { number: 28, name: 'Molar del juicio', type: 'molar' },
-]
-const LOWER_LEFT: ToothData[] = [
-  { number: 31, name: 'Incisivo central', type: 'incisor' },
-  { number: 32, name: 'Incisivo lateral', type: 'incisor' },
-  { number: 33, name: 'Canino', type: 'canine' },
-  { number: 34, name: 'Primer premolar', type: 'premolar' },
-  { number: 35, name: 'Segundo premolar', type: 'premolar' },
-  { number: 36, name: 'Primer molar', type: 'molar' },
-  { number: 37, name: 'Segundo molar', type: 'molar' },
-  { number: 38, name: 'Molar del juicio', type: 'molar' },
-]
-const LOWER_RIGHT: ToothData[] = [
-  { number: 48, name: 'Molar del juicio', type: 'molar' },
-  { number: 47, name: 'Segundo molar', type: 'molar' },
-  { number: 46, name: 'Primer molar', type: 'molar' },
-  { number: 45, name: 'Segundo premolar', type: 'premolar' },
-  { number: 44, name: 'Primer premolar', type: 'premolar' },
-  { number: 43, name: 'Canino', type: 'canine' },
-  { number: 42, name: 'Incisivo lateral', type: 'incisor' },
-  { number: 41, name: 'Incisivo central', type: 'incisor' },
-]
+// Tipos de hallazgo por grupo. Los marcados como "diente completo" se aplican a toda la pieza.
+const TIPOS: Record<Grupo, string[]> = {
+  existente: ['Obturación', 'Corona', 'Endodoncia', 'Implante', 'Resto radicular', 'Ausente'],
+  por_hacer: ['Caries', 'Obturación', 'Corona', 'Endodoncia', 'Extracción', 'Implante'],
+  realizado: ['Obturación', 'Corona', 'Endodoncia', 'Extracción', 'Sellante', 'Limpieza'],
+}
+// Tipos que afectan a TODA la pieza (no a una cara puntual)
+const TIPOS_DIENTE_COMPLETO = new Set([
+  'Corona', 'Endodoncia', 'Implante', 'Resto radicular', 'Ausente', 'Extracción',
+])
+// Tipos que se dibujan como X sobre la pieza
+const TIPOS_X = new Set(['Ausente', 'Extracción'])
 
-const CONDITION_COLORS: Record<ToothCondition, string> = {
-  SANO:       'fill-white stroke-gray-400',
-  CARIES:     'fill-red-400 stroke-red-600',
-  OBTURADO:   'fill-blue-300 stroke-blue-600',
-  EXTRAIDO:   'fill-gray-100 stroke-gray-400',
-  AUSENTE:    'fill-gray-100 stroke-gray-400',
-  CORONA:     'fill-yellow-200 stroke-yellow-500',
-  IMPLANTE:   'fill-green-200 stroke-green-600',
-  ENDODONCIA: 'fill-orange-200 stroke-orange-500',
-  FRACTURA:   'fill-white stroke-gray-400',
-  SELLANTE:   'fill-sky-100 stroke-sky-400',
+// ── Numeración FDI ────────────────────────────────────────────────
+const FILA_SUP = [18, 17, 16, 15, 14, 13, 12, 11, 21, 22, 23, 24, 25, 26, 27, 28]
+const FILA_INF = [48, 47, 46, 45, 44, 43, 42, 41, 31, 32, 33, 34, 35, 36, 37, 38]
+
+// Posición en pantalla → cara anatómica (mesial siempre hacia la línea media)
+function zoneToCara(zone: string, diente: number): Cara {
+  const q = Math.floor(diente / 10)
+  const rightIsMesial = q === 1 || q === 4
+  switch (zone) {
+    case 'top': return 'V'
+    case 'bottom': return 'L'
+    case 'center': return 'O'
+    case 'left': return rightIsMesial ? 'D' : 'M'
+    case 'right': return rightIsMesial ? 'M' : 'D'
+    default: return 'O'
+  }
 }
 
-const CONDITION_LABELS: Record<ToothCondition, string> = {
-  SANO:       '✓ Sano',
-  CARIES:     '● Caries',
-  OBTURADO:   '■ Obturado/Restaurado',
-  EXTRAIDO:   '✕ Extraído',
-  AUSENTE:    '○ Ausente',
-  CORONA:     '♦ Corona/Prótesis',
-  IMPLANTE:   '+ Implante',
-  ENDODONCIA: '↓ Endodoncia',
-  FRACTURA:   '/ Fractura',
-  SELLANTE:   '· Sellante',
-}
+const key = (d: number, c: Cara) => `${d}-${c}`
 
-interface ToothProps {
-  tooth: ToothData
-  state: ToothState
-  selected: boolean
-  onClick: () => void
-  isUpper: boolean
-}
+// ── Diente individual (SVG) ───────────────────────────────────────
+function Tooth({
+  diente, marks, onZone, readOnly,
+}: {
+  diente: number
+  marks: Record<string, OdontogramMark>
+  onZone: (cara: Cara) => void
+  readOnly: boolean
+}) {
+  const fill = (cara: Cara) => {
+    const m = marks[key(diente, cara)]
+    return m ? GRUPO_COLOR[m.grupo] : '#ffffff'
+  }
+  const todo = marks[key(diente, 'TODO')]
+  const todoColor = todo ? GRUPO_COLOR[todo.grupo] : null
+  const esX = todo && TIPOS_X.has(todo.tipo || '')
 
-function ToothSVG({ tooth, state, selected, onClick, isUpper }: ToothProps) {
-  const isMolar = tooth.type === 'molar'
-  const isExtraido = state.condition === 'EXTRAIDO' || state.condition === 'AUSENTE'
-  const baseColor = CONDITION_COLORS[state.condition]
+  const zones: { id: string; cara: Cara; points: string }[] = [
+    { id: 'top', cara: zoneToCara('top', diente), points: '0,0 40,0 20,20' },
+    { id: 'right', cara: zoneToCara('right', diente), points: '40,0 40,40 20,20' },
+    { id: 'bottom', cara: zoneToCara('bottom', diente), points: '0,40 40,40 20,20' },
+    { id: 'left', cara: zoneToCara('left', diente), points: '0,0 0,40 20,20' },
+  ]
+
+  function handle(cara: Cara) {
+    if (readOnly) return
+    onZone(cara)
+  }
 
   return (
-    <div
-      className={cn(
-        'flex flex-col items-center cursor-pointer group',
-        isUpper ? 'flex-col' : 'flex-col-reverse'
-      )}
-      onClick={onClick}
-    >
-      {/* Número FDI */}
-      <span className={cn(
-        'text-[10px] font-mono font-bold mb-0.5',
-        selected ? 'text-blue-700' : 'text-gray-500',
-        isUpper ? 'order-last mt-0.5' : 'order-first mb-0.5'
-      )}>
-        {tooth.number}
-      </span>
-
-      {/* Diente SVG */}
-      <div className={cn(
-        'relative transition-transform group-hover:scale-110',
-        selected && 'ring-2 ring-blue-500 ring-offset-1 rounded'
-      )}>
-        <svg
-          width={isMolar ? 28 : 22}
-          height={isUpper ? 36 : 36}
-          viewBox="0 0 28 40"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          {isExtraido ? (
-            <>
-              {/* X para extraído */}
-              <line x1="4" y1="4" x2="24" y2="36" stroke="#6B7280" strokeWidth="2.5" strokeLinecap="round"/>
-              <line x1="24" y1="4" x2="4" y2="36" stroke="#6B7280" strokeWidth="2.5" strokeLinecap="round"/>
-            </>
-          ) : (
-            <>
-              {/* Corona del diente */}
-              <rect
-                x="3" y={isUpper ? "4" : "4"}
-                width="22" height="20"
-                rx="3"
-                className={baseColor}
-                strokeWidth="1.5"
-              />
-              {/* Raíz */}
-              {isMolar ? (
-                <>
-                  <rect x="6" y={isUpper ? "22" : "14"} width="5" height="14" rx="2"
-                    className={baseColor} strokeWidth="1.5"/>
-                  <rect x="13" y={isUpper ? "22" : "14"} width="5" height="16" rx="2"
-                    className={baseColor} strokeWidth="1.5"/>
-                </>
-              ) : tooth.type === 'premolar' ? (
-                <>
-                  <rect x="8" y={isUpper ? "22" : "14"} width="5" height="14" rx="2"
-                    className={baseColor} strokeWidth="1.5"/>
-                  <rect x="15" y={isUpper ? "22" : "14"} width="5" height="12" rx="2"
-                    className={baseColor} strokeWidth="1.5"/>
-                </>
-              ) : (
-                <rect x="9" y={isUpper ? "22" : "14"} width="10" height="16" rx="2"
-                  className={baseColor} strokeWidth="1.5"/>
-              )}
-              {/* Punto de endodoncia */}
-              {state.condition === 'ENDODONCIA' && (
-                <circle cx="14" cy="14" r="3" fill="#f97316" stroke="#ea580c" strokeWidth="1"/>
-              )}
-              {/* Línea de fractura */}
-              {state.condition === 'FRACTURA' && (
-                <line x1="14" y1="4" x2="10" y2="24" stroke="#ef4444" strokeWidth="2" strokeDasharray="3,2"/>
-              )}
-            </>
-          )}
-        </svg>
-      </div>
+    <div className="flex flex-col items-center gap-0.5">
+      <span className="text-[10px] font-semibold text-gray-500 tabular-nums">{diente}</span>
+      <svg viewBox="0 0 40 40" className="w-9 h-9" style={{ cursor: readOnly ? 'default' : 'pointer' }}>
+        {/* Caras laterales/superior/inferior */}
+        {zones.map((z) => (
+          <polygon
+            key={z.id}
+            points={z.points}
+            fill={fill(z.cara)}
+            stroke="#cbd5e1"
+            strokeWidth={0.8}
+            onClick={() => handle(z.cara)}
+          />
+        ))}
+        {/* Oclusal (centro) */}
+        <rect
+          x={12} y={12} width={16} height={16}
+          fill={fill('O')}
+          stroke="#cbd5e1"
+          strokeWidth={0.8}
+          onClick={() => handle('O')}
+        />
+        {/* Diente completo: borde de color o X */}
+        {todoColor && !esX && (
+          <rect x={1} y={1} width={38} height={38} fill="none" stroke={todoColor} strokeWidth={2.5} rx={2} />
+        )}
+        {esX && (
+          <g stroke={todoColor!} strokeWidth={3} strokeLinecap="round">
+            <line x1={4} y1={4} x2={36} y2={36} />
+            <line x1={36} y1={4} x2={4} y2={36} />
+          </g>
+        )}
+        {/* Capa invisible para click en diente completo cuando hay X (cubre todo) */}
+        {!readOnly && (
+          <rect x={0} y={0} width={40} height={40} fill="transparent" pointerEvents="none" />
+        )}
+      </svg>
     </div>
   )
 }
 
-// ── CONDICIONES disponibles para seleccionar ──
-const CONDITIONS: ToothCondition[] = [
-  'SANO', 'CARIES', 'OBTURADO', 'EXTRAIDO',
-  'CORONA', 'IMPLANTE', 'ENDODONCIA', 'FRACTURA', 'SELLANTE'
-]
-
-const CONDITION_COLORS_UI: Record<ToothCondition, string> = {
-  SANO:       'bg-white border-gray-300 text-gray-700',
-  CARIES:     'bg-red-100 border-red-400 text-red-800',
-  OBTURADO:   'bg-blue-100 border-blue-400 text-blue-800',
-  EXTRAIDO:   'bg-gray-100 border-gray-400 text-gray-600',
-  AUSENTE:    'bg-gray-100 border-gray-400 text-gray-600',
-  CORONA:     'bg-yellow-100 border-yellow-400 text-yellow-800',
-  IMPLANTE:   'bg-green-100 border-green-500 text-green-800',
-  ENDODONCIA: 'bg-orange-100 border-orange-400 text-orange-800',
-  FRACTURA:   'bg-red-50 border-red-300 text-red-700',
-  SELLANTE:   'bg-sky-100 border-sky-400 text-sky-800',
-}
-
-interface OdontogramProps {
-  value?: Record<number, ToothState>
-  onChange?: (teeth: Record<number, ToothState>) => void
+// ── Componente principal ──────────────────────────────────────────
+interface Props {
+  value?: OdontogramMark[]
+  onChange?: (marks: OdontogramMark[]) => void
   readOnly?: boolean
 }
 
-export function Odontogram({ value = {}, onChange, readOnly = false }: OdontogramProps) {
-  const [selectedTooth, setSelectedTooth] = useState<number | null>(null)
-  const [teeth, setTeeth] = useState<Record<number, ToothState>>(value)
+export function Odontogram({ value = [], onChange, readOnly = false }: Props) {
+  const [marks, setMarks] = useState<Record<string, OdontogramMark>>({})
+  const [grupo, setGrupo] = useState<Grupo>('por_hacer')
+  const [tipo, setTipo] = useState<string>('Caries')
+  const [borrar, setBorrar] = useState(false)
 
-  const getState = (num: number): ToothState =>
-    teeth[num] ?? { condition: 'SANO' }
+  // Sincronizar con value entrante
+  useEffect(() => {
+    const map: Record<string, OdontogramMark> = {}
+    for (const m of value) map[key(m.diente, m.cara)] = m
+    setMarks(map)
+  }, [JSON.stringify(value)]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const setCondition = (condition: ToothCondition) => {
-    if (!selectedTooth || readOnly) return
-    const updated = { ...teeth, [selectedTooth]: { ...getState(selectedTooth), condition } }
-    setTeeth(updated)
-    onChange?.(updated)
+  function emit(next: Record<string, OdontogramMark>) {
+    setMarks(next)
+    onChange?.(Object.values(next))
   }
 
-  const selectedState = selectedTooth ? getState(selectedTooth) : null
+  function aplicar(diente: number, cara: Cara) {
+    const dienteCompleto = TIPOS_DIENTE_COMPLETO.has(tipo)
+    const caraFinal: Cara = dienteCompleto ? 'TODO' : cara
+    const k = key(diente, caraFinal)
+    const next = { ...marks }
 
-  const renderRow = (row: ToothData[], isUpper: boolean) => (
-    <div className="flex items-end gap-0.5">
-      {row.map((tooth) => (
-        <ToothSVG
-          key={tooth.number}
-          tooth={tooth}
-          state={getState(tooth.number)}
-          selected={selectedTooth === tooth.number}
-          onClick={() => !readOnly && setSelectedTooth(
-            selectedTooth === tooth.number ? null : tooth.number
-          )}
-          isUpper={isUpper}
-        />
-      ))}
-    </div>
-  )
+    if (borrar) {
+      delete next[k]
+      // Si borro y el diente tiene TODO, al clickear cualquier cara en modo borrar quito también TODO si aplica
+      emit(next)
+      return
+    }
+    next[k] = { diente, cara: caraFinal, grupo, tipo }
+    emit(next)
+  }
+
+  function onSelectGrupo(g: Grupo) {
+    setGrupo(g)
+    setTipo(TIPOS[g][0])
+    setBorrar(false)
+  }
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-4">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="font-semibold text-gray-800 text-sm">
-          Odontograma <span className="text-gray-400 font-normal">(Sistema FDI)</span>
-        </h3>
-        <div className="flex gap-3 text-xs text-gray-400">
-          <span>Der. paciente →</span>
-          <span>← Izq. paciente</span>
-        </div>
-      </div>
-
-      {/* Leyenda lateral */}
-      <div className="flex gap-4">
-        <div className="flex-1">
-          {/* Arcada superior */}
-          <div className="mb-0.5">
-            <div className="text-[10px] text-gray-400 text-center mb-1 font-medium tracking-wide uppercase">
-              Superior — Maxilar
-            </div>
-            <div className="flex justify-center gap-1">
-              {/* Línea divisoria cuadrantes */}
-              <div className="flex items-end">
-                {renderRow(UPPER_RIGHT, true)}
-                <div className="w-px h-8 bg-gray-300 mx-1 mb-1"/>
-                {renderRow(UPPER_LEFT, true)}
-              </div>
-            </div>
-          </div>
-
-          {/* Separador oclusal */}
-          <div className="w-full h-px bg-gray-200 my-2"/>
-
-          {/* Arcada inferior */}
-          <div className="mt-0.5">
-            <div className="flex justify-center gap-1">
-              <div className="flex items-start">
-                {renderRow(LOWER_RIGHT, false)}
-                <div className="w-px h-8 bg-gray-300 mx-1 mt-1"/>
-                {renderRow(LOWER_LEFT, false)}
-              </div>
-            </div>
-            <div className="text-[10px] text-gray-400 text-center mt-1 font-medium tracking-wide uppercase">
-              Inferior — Mandíbular
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Panel de edición al seleccionar una pieza */}
-      {selectedTooth && !readOnly && (
-        <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-sm font-semibold text-blue-800">
-              Pieza {selectedTooth}
-              <span className="font-normal text-blue-600 ml-2">
-                {[...UPPER_RIGHT, ...UPPER_LEFT, ...LOWER_LEFT, ...LOWER_RIGHT]
-                  .find(t => t.number === selectedTooth)?.name}
-              </span>
-            </p>
-            <button
-              onClick={() => setSelectedTooth(null)}
-              className="text-blue-400 hover:text-blue-600 text-xs"
-            >
-              Cerrar ✕
-            </button>
-          </div>
-          <div className="flex flex-wrap gap-1.5">
-            {CONDITIONS.map((cond) => (
+    <div className="space-y-4">
+      {/* Barra de herramientas */}
+      {!readOnly && (
+        <div className="bg-white rounded-xl border border-gray-200 p-3 space-y-3">
+          <div className="flex flex-wrap items-center gap-2">
+            {(Object.keys(GRUPO_COLOR) as Grupo[]).map((g) => (
               <button
-                key={cond}
-                onClick={() => setCondition(cond)}
-                className={cn(
-                  'px-2 py-1 text-xs rounded-full border font-medium transition-all',
-                  selectedState?.condition === cond
-                    ? 'ring-2 ring-offset-1 ring-blue-500 scale-105'
-                    : 'hover:scale-105',
-                  CONDITION_COLORS_UI[cond]
-                )}
+                key={g}
+                onClick={() => onSelectGrupo(g)}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm font-medium transition-colors"
+                style={{
+                  borderColor: grupo === g && !borrar ? GRUPO_COLOR[g] : '#e5e7eb',
+                  backgroundColor: grupo === g && !borrar ? `${GRUPO_COLOR[g]}14` : '#fff',
+                  color: grupo === g && !borrar ? GRUPO_COLOR[g] : '#6b7280',
+                }}
               >
-                {CONDITION_LABELS[cond]}
+                <span className="w-3 h-3 rounded-full" style={{ backgroundColor: GRUPO_COLOR[g] }} />
+                {GRUPO_LABEL[g]}
               </button>
             ))}
+
+            <select
+              value={tipo}
+              onChange={(e) => { setTipo(e.target.value); setBorrar(false) }}
+              className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+            >
+              {TIPOS[grupo].map((t) => (
+                <option key={t} value={t}>{t}{TIPOS_DIENTE_COMPLETO.has(t) ? ' (pieza)' : ''}</option>
+              ))}
+            </select>
+
+            <button
+              onClick={() => setBorrar((b) => !b)}
+              className={`px-3 py-1.5 rounded-lg border text-sm font-medium ${borrar ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}
+            >
+              Borrar
+            </button>
           </div>
+          <p className="text-xs text-gray-400">
+            Elegí color y tipo, después tocá la cara del diente (oclusal al centro, vestibular arriba, lingual/palatina abajo, mesial y distal a los lados). Los tipos marcados como “(pieza)” se aplican al diente completo.
+          </p>
         </div>
       )}
 
-      {/* Leyenda */}
-      <div className="mt-3 pt-3 border-t border-gray-100">
-        <p className="text-[10px] text-gray-400 mb-1.5 font-medium">REFERENCIAS:</p>
-        <div className="flex flex-wrap gap-x-4 gap-y-1">
-          {CONDITIONS.map((cond) => (
-            <span key={cond} className="flex items-center gap-1 text-[10px] text-gray-500">
-              <span className={cn(
-                'w-3 h-3 rounded-sm border inline-block',
-                CONDITION_COLORS_UI[cond].replace('text-', 'border-').split(' ')[1]
-              )} style={{
-                backgroundColor: {
-                  SANO: 'white', CARIES: '#fca5a5', OBTURADO: '#93c5fd',
-                  EXTRAIDO: '#e5e7eb', AUSENTE: '#e5e7eb', CORONA: '#fde68a',
-                  IMPLANTE: '#a7f3d0', ENDODONCIA: '#fed7aa', FRACTURA: '#fee2e2', SELLANTE: '#e0f2fe'
-                }[cond]
-              }}/>
-              {CONDITION_LABELS[cond].split(' ').slice(1).join(' ')}
-            </span>
-          ))}
+      {/* Arcadas */}
+      <div className="bg-white rounded-xl border border-gray-200 p-4 overflow-x-auto">
+        <div className="min-w-[680px] space-y-4">
+          <div>
+            <p className="text-xs text-gray-400 mb-1">Superior</p>
+            <div className="flex justify-center gap-1">
+              {FILA_SUP.map((d, i) => (
+                <div key={d} className={i === 8 ? 'ml-3' : ''}>
+                  <Tooth diente={d} marks={marks} onZone={(c) => aplicar(d, c)} readOnly={readOnly} />
+                </div>
+              ))}
+            </div>
+          </div>
+          <div>
+            <div className="flex justify-center gap-1">
+              {FILA_INF.map((d, i) => (
+                <div key={d} className={i === 8 ? 'ml-3' : ''}>
+                  <Tooth diente={d} marks={marks} onZone={(c) => aplicar(d, c)} readOnly={readOnly} />
+                </div>
+              ))}
+            </div>
+            <p className="text-xs text-gray-400 mt-1">Inferior</p>
+          </div>
         </div>
+      </div>
+
+      {/* Leyenda */}
+      <div className="flex flex-wrap gap-4 text-xs text-gray-500">
+        <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm" style={{ background: GRUPO_COLOR.existente }} /> Existente / ausencias</span>
+        <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm" style={{ background: GRUPO_COLOR.por_hacer }} /> Por hacer</span>
+        <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm" style={{ background: GRUPO_COLOR.realizado }} /> Realizado por vos</span>
       </div>
     </div>
   )
