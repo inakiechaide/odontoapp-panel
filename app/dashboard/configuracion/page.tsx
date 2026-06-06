@@ -15,6 +15,18 @@ interface WAStatus {
 export default function ConfiguracionPage() {
   const [secondsLeft, setSecondsLeft] = useState(30)
 
+  // Despertar el worker de WhatsApp en paralelo (Render free se duerme).
+  // Ping directo no-cors a su /health para que arranque sin esperar la cadena
+  // Vercel -> API -> worker. Se reintenta mientras no esté conectado.
+  useEffect(() => {
+    const wake = () => {
+      fetch('https://odontoapp-whatsapp.onrender.com/health', { mode: 'no-cors' }).catch(() => {})
+    }
+    wake()
+    const t = setInterval(wake, 15_000)
+    return () => clearInterval(t)
+  }, [])
+
   const { data: waStatus, refetch, isRefetching, dataUpdatedAt } = useQuery<WAStatus>({
     queryKey: ['whatsapp', 'status'],
     queryFn: async () => {
