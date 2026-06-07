@@ -24,8 +24,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     setChecked(true)
   }, [hydrated, router])
 
-  // Mostrar nada hasta que el store esté hidratado (evita flash)
-  if (!checked && !getAccessToken()) {
+  // Hasta que el efecto de montaje confirme la sesión, renderizar SIEMPRE el
+  // mismo árbol (spinner) en servidor y cliente. Leer el token durante el
+  // render rompía la hidratación (#418/#423): el server no ve el token y el
+  // cliente sí, generando HTML distinto.
+  if (!checked) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
