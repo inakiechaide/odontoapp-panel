@@ -17,6 +17,9 @@ interface UIStore {
   sidebarOpen: boolean
   toggleSidebar: () => void
   setSidebarOpen: (open: boolean) => void
+  mobileNavOpen: boolean
+  setMobileNavOpen: (open: boolean) => void
+  toggleMobileNav: () => void
   selectedDentistId: string | null
   setSelectedDentistId: (id: string | null) => void
   agendaView: 'week' | 'day'
@@ -60,6 +63,9 @@ export const useUIStore = create<UIStore>((set) => ({
   sidebarOpen: true,
   toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
   setSidebarOpen: (open) => set({ sidebarOpen: open }),
+  mobileNavOpen: false,
+  setMobileNavOpen: (open) => set({ mobileNavOpen: open }),
+  toggleMobileNav: () => set((s) => ({ mobileNavOpen: !s.mobileNavOpen })),
 
   selectedDentistId: null,
   setSelectedDentistId: (id) => set({ selectedDentistId: id }),

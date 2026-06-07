@@ -48,7 +48,7 @@ export default function NuevoPacientePage() {
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="bg-white rounded-xl border border-gray-200 p-6 space-y-4">
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
             <input {...register('nombre', { required: true })} className={inputCls} placeholder="María" />
@@ -61,7 +61,7 @@ export default function NuevoPacientePage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">DNI</label>
             <input {...register('dni', { pattern: /^\d{7,8}$/ })} className={inputCls} placeholder="35123456" maxLength={8} />
@@ -73,7 +73,7 @@ export default function NuevoPacientePage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
             <input {...register('email')} type="email" className={inputCls} />
@@ -93,7 +93,7 @@ export default function NuevoPacientePage() {
         </div>
 
         {obraSocial && obraSocial !== 'PARTICULAR' && (
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Nro de afiliado</label>
               <input {...register('nroAfiliado')} className={inputCls} />

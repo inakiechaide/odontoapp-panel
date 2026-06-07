@@ -264,7 +264,7 @@ export default function PatientDetailPage() {
           {appts.length === 0 ? (
             <div className="p-8 text-center text-gray-400">Sin turnos registrados</div>
           ) : (
-            <table className="w-full text-sm">
+            <div className="overflow-x-auto"><table className="w-full text-sm min-w-[640px]">
               <thead><tr className="border-b border-gray-100 bg-gray-50">
                 <th className="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase">Fecha y hora</th>
                 <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Tratamiento</th>
@@ -285,7 +285,7 @@ export default function PatientDetailPage() {
                   </tr>
                 ))}
               </tbody>
-            </table>
+            </table></div>
           )}
         </div>
       )}
@@ -428,7 +428,7 @@ function TratamientosTab({ patientId }: { patientId: string }) {
             <p>Sin tratamientos registrados</p>
           </div>
         ) : (
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto"><table className="w-full text-sm min-w-[640px]">
             <thead><tr className="border-b border-gray-100 bg-gray-50">
               <th className="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase">Tratamiento</th>
               <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Piezas</th>
@@ -462,7 +462,7 @@ function TratamientosTab({ patientId }: { patientId: string }) {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
         )}
       </div>
     </div>

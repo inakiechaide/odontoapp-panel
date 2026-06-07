@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Send, MessageSquare, User, Phone, CheckCircle, Plus, X } from 'lucide-react'
+import { Send, MessageSquare, User, Phone, CheckCircle, Plus, X, ArrowLeft } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import api from '@/lib/api'
@@ -125,7 +125,7 @@ export default function InboxPage() {
   return (
     <div className="flex h-[calc(100vh-130px)] bg-white rounded-xl border border-gray-200 overflow-hidden">
       {/* Sidebar */}
-      <div className="w-72 flex-shrink-0 border-r border-gray-100 flex flex-col">
+      <div className={cn("w-full lg:w-72 flex-shrink-0 border-r border-gray-100 flex flex-col", selectedId && "hidden lg:flex")}>
         <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-2">
           <span className="font-semibold text-gray-900 text-sm">WhatsApp</span>
           {convs.length > 0 && (
@@ -193,6 +193,9 @@ export default function InboxPage() {
         <div className="flex-1 flex flex-col min-w-0">
           <div className="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
             <div className="flex items-center gap-3">
+              <button onClick={() => setSelectedId(null)} className="p-1 -ml-2 rounded-lg text-gray-500 hover:bg-gray-100 lg:hidden" aria-label="Volver">
+                <ArrowLeft className="w-5 h-5" />
+              </button>
               <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center">
                 <User className="w-4 h-4 text-gray-400" />
               </div>
@@ -267,7 +270,7 @@ export default function InboxPage() {
           </div>
         </div>
       ) : (
-        <div className="flex-1 flex items-center justify-center bg-[#f0f2f5]">
+        <div className="flex-1 hidden lg:flex items-center justify-center bg-[#f0f2f5]">
           <div className="text-center text-gray-400">
             <MessageSquare className="w-14 h-14 mx-auto mb-3 opacity-20" />
             <p className="font-medium text-gray-500">Seleccioná una conversación</p>

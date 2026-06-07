@@ -99,7 +99,7 @@ export function PatientForm({ defaultValues, onSubmit, isLoading }: PatientFormP
     <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-5">
 
       {/* Nombre y Apellido */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className={labelClass}>Nombre *</label>
           <input {...register('nombre')} className={inputClass} placeholder="María" />
@@ -113,7 +113,7 @@ export function PatientForm({ defaultValues, onSubmit, isLoading }: PatientFormP
       </div>
 
       {/* DNI y CUIL */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className={labelClass}>DNI</label>
           <input {...register('dni')} className={inputClass} placeholder="35123456" maxLength={8} />
@@ -127,7 +127,7 @@ export function PatientForm({ defaultValues, onSubmit, isLoading }: PatientFormP
       </div>
 
       {/* WhatsApp y Email */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className={labelClass}>WhatsApp</label>
           <input {...register('telefonoWhatsapp')} className={inputClass}
@@ -143,7 +143,7 @@ export function PatientForm({ defaultValues, onSubmit, isLoading }: PatientFormP
       </div>
 
       {/* Fecha de nacimiento y localidad */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className={labelClass}>Fecha de nacimiento</label>
           <input {...register('fechaNacimiento')} type="date" className={inputClass} />
@@ -155,7 +155,7 @@ export function PatientForm({ defaultValues, onSubmit, isLoading }: PatientFormP
       </div>
 
       {/* Dirección y provincia */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className={labelClass}>Dirección</label>
           <input {...register('direccion')} className={inputClass} placeholder="Av. Siempre Viva 742" />
@@ -179,7 +179,7 @@ export function PatientForm({ defaultValues, onSubmit, isLoading }: PatientFormP
 
       {/* Nro Afiliado (solo si tiene obra social) */}
       {obraSocialValue && obraSocialValue !== 'PARTICULAR' && (
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className={labelClass}>Nro de afiliado</label>
             <input {...register('nroAfiliado')} className={inputClass} />

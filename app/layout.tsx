@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import { Providers } from '@/components/shared/Providers'
@@ -9,6 +9,12 @@ export const metadata: Metadata = {
   title: 'OdontoApp — Panel Administrativo',
   description: 'Sistema de gestión odontológica para AMBA',
   icons: { icon: '/favicon.ico' },
+}
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

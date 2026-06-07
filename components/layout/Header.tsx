@@ -1,12 +1,12 @@
 'use client'
 
-import { Bell, Search } from 'lucide-react'
+import { Bell, Search, Menu } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { useUIStore } from '@/stores/ui.store'
 import { formatDate } from '@/lib/utils'
 
 export function Header() {
-  const { user, notifications } = useUIStore()
+  const { user, notifications, toggleMobileNav } = useUIStore()
   const [searchOpen, setSearchOpen] = useState(false)
   const [hoy, setHoy] = useState('')
   const unread = notifications.length
@@ -18,7 +18,16 @@ export function Header() {
   }, [])
 
   return (
-    <header className="h-14 bg-white border-b border-gray-200 flex items-center px-6 gap-4 flex-shrink-0">
+    <header className="h-14 bg-white border-b border-gray-200 flex items-center px-4 sm:px-6 gap-3 sm:gap-4 flex-shrink-0">
+      {/* Hamburguesa (solo mobile) */}
+      <button
+        onClick={toggleMobileNav}
+        className="p-2 -ml-2 rounded-lg text-gray-500 hover:bg-gray-100 lg:hidden"
+        aria-label="Abrir menú"
+      >
+        <Menu className="w-5 h-5" />
+      </button>
+
       {/* Fecha */}
       <span className="text-sm text-gray-500 hidden sm:block" suppressHydrationWarning>
         {hoy}

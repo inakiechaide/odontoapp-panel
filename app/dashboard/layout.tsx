@@ -11,6 +11,8 @@ import { useUIStore } from '@/stores/ui.store'
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const hydrated = useUIStore((s) => s._hydrated)
+  const mobileNavOpen = useUIStore((s) => s.mobileNavOpen)
+  const setMobileNavOpen = useUIStore((s) => s.setMobileNavOpen)
   const [checked, setChecked] = useState(false)
 
   useEffect(() => {
@@ -34,9 +36,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   return (
     <div className="flex h-screen bg-gray-50 overflow-hidden">
       <Sidebar />
+      {/* Backdrop del drawer en mobile */}
+      {mobileNavOpen && (
+        <div
+          className="fixed inset-0 bg-black/40 z-40 lg:hidden"
+          onClick={() => setMobileNavOpen(false)}
+          aria-hidden
+        />
+      )}
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
         <Header />
-        <main className="flex-1 overflow-y-auto p-6">
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6">
           {children}
         </main>
       <ModalManager />

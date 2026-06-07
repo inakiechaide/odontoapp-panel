@@ -126,7 +126,7 @@ export default function InventarioPage() {
 
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
         {isLoading ? <div className="p-8 text-center text-gray-400">Cargando...</div> : (
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto"><table className="w-full text-sm min-w-[640px]">
             <thead><tr className="border-b border-gray-100 bg-gray-50">
               <th className="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase">Item</th>
               <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Categoría</th>
@@ -158,7 +158,7 @@ export default function InventarioPage() {
                 )
               })}
             </tbody>
-          </table>
+          </table></div>
         )}
       </div>
     </div>
