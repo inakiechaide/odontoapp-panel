@@ -264,24 +264,26 @@ export default function PatientDetailPage() {
           {appts.length === 0 ? (
             <div className="p-8 text-center text-gray-400">Sin turnos registrados</div>
           ) : (
-            <div className="overflow-x-auto"><table className="w-full text-sm min-w-[640px]">
+            <div className="overflow-x-auto"><table className="w-full text-sm min-w-[760px]">
               <thead><tr className="border-b border-gray-100 bg-gray-50">
                 <th className="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase">Fecha y hora</th>
                 <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Tratamiento</th>
                 <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Estado</th>
-                <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase hidden md:table-cell">Motivo</th>
+                <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Motivo</th>
+                <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Observación</th>
               </tr></thead>
               <tbody className="divide-y divide-gray-50">
                 {appts.map((a: any) => (
-                  <tr key={a.id} className="hover:bg-gray-50">
-                    <td className="px-5 py-3 text-gray-700 font-medium">{formatDateTime(a.fechaHora)}</td>
+                  <tr key={a.id} className="hover:bg-gray-50 align-top">
+                    <td className="px-5 py-3 text-gray-700 font-medium whitespace-nowrap">{formatDateTime(a.fechaHora)}</td>
                     <td className="px-4 py-3 text-gray-600">{a.tipoTratamiento || 'Consulta'}</td>
                     <td className="px-4 py-3">
                       <span className={cn('px-2 py-0.5 rounded-full text-xs font-medium border', (STATUS_COLORS as any)[a.status] ?? 'bg-gray-100 text-gray-600')}>
                         {(STATUS_LABELS as any)[a.status] ?? a.status}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-gray-400 text-xs hidden md:table-cell">{a.motivoConsulta || '—'}</td>
+                    <td className="px-4 py-3 text-gray-600 text-xs whitespace-pre-wrap break-words max-w-[220px]">{a.motivoConsulta || '—'}</td>
+                    <td className="px-4 py-3 text-gray-600 text-xs whitespace-pre-wrap break-words max-w-[260px]">{a.canceladoMotivo || a.notasInternas || '—'}</td>
                   </tr>
                 ))}
               </tbody>
