@@ -51,7 +51,7 @@ export function Sidebar() {
         <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-brand-600 flex items-center justify-center">
           <Stethoscope className="w-4 h-4 text-white" />
         </div>
-        <span className={cn('font-bold text-gray-900 text-sm', labelCls)}>OdontoApp</span>
+        <span className={cn('font-display font-semibold text-gray-900 text-base tracking-tight', labelCls)}>OdontoApp</span>
         <button
           onClick={() => setMobileNavOpen(false)}
           className="ml-auto p-1 rounded-lg text-gray-400 hover:bg-gray-100 lg:hidden"

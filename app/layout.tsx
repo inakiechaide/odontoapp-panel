@@ -1,9 +1,14 @@
 import type { Metadata, Viewport } from 'next'
-import { Inter } from 'next/font/google'
+import { Inter, Spectral } from 'next/font/google'
 import './globals.css'
 import { Providers } from '@/components/shared/Providers'
 
 const inter = Inter({ subsets: ['latin'] })
+const spectral = Spectral({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-serif',
+})
 
 export const metadata: Metadata = {
   title: 'OdontoApp — Panel Administrativo',
@@ -20,7 +25,7 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="es-AR" suppressHydrationWarning>
-      <body className={`${inter.className} antialiased`}>
+      <body className={`${inter.className} ${spectral.variable} antialiased`}>
         <Providers>{children}</Providers>
       </body>
     </html>
