@@ -49,13 +49,15 @@ export function Header() {
   })
   const resultados = searchData?.data ?? []
 
-  // Conversaciones (para el contador de no leídos)
+  // Conversaciones (para el contador de no leídos).
+  // IMPORTANTE: misma queryKey y MISMA forma (array) que usa el inbox, para no
+  // pisarnos en la caché de React Query.
   const { data: convData } = useQuery({
     queryKey: ['conversations'],
-    queryFn: async () => (await api.get('/conversations?limit=50')).data,
+    queryFn: async () => (await api.get('/conversations?limit=50')).data?.data ?? [],
     refetchInterval: 60_000,
   })
-  const convs = convData?.data ?? []
+  const convs = Array.isArray(convData) ? convData : []
   const sinLeer = convs.filter((c: any) => (c._count?.messages ?? 0) > 0)
   const totalSinLeer = sinLeer.reduce((acc: number, c: any) => acc + (c._count?.messages ?? 0), 0)
 

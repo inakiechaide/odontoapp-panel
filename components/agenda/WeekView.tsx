@@ -181,7 +181,7 @@ export function WeekView() {
     queryFn: async () => (await api.get('/dentists')).data,
   })
   const selectedDentist = useMemo(
-    () => (dentists as any[] | undefined)?.find((d) => d.id === selectedDentistId),
+    () => (Array.isArray(dentists) ? dentists : []).find((d) => d.id === selectedDentistId),
     [dentists, selectedDentistId],
   )
   const { startHour, endHour } = useMemo(

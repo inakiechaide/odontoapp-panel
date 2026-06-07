@@ -69,7 +69,7 @@ export default function InboxPage() {
   })
 
   const messages = detail?.messages ?? []
-  const selected = convs.find(c => c.id === selectedId)
+  const selected = Array.isArray(convs) ? convs.find(c => c.id === selectedId) : undefined
 
   const sendMut = useMutation({
     mutationFn: ({ id, msg }: { id: string; msg: string }) =>
