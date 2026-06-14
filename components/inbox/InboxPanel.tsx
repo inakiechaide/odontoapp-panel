@@ -15,6 +15,32 @@ import {
 import type { Conversation, Message } from '@/types'
 import { toast } from 'sonner'
 
+// Un celular argentino real es +549 + 10 dígitos (13 en total). Cuando WhatsApp
+// no entrega el número real (contactos @lid), queda guardado un identificador
+// interno mucho más largo: no es un teléfono y no hay que mostrarlo como tal.
+function esTelefonoReal(t?: string | null): boolean {
+  if (!t) return false
+  const d = t.replace(/\D/g, '')
+  return d.length >= 10 && d.length <= 14
+}
+
+type ConvLike = {
+  patient?: { nombre?: string | null; apellido?: string | null } | null
+  telefonoWhatsapp?: string | null
+}
+
+function nombreMostrado(c: ConvLike): string {
+  const n = `${c.patient?.nombre ?? ''} ${c.patient?.apellido ?? ''}`.trim()
+  if (n) return n
+  if (esTelefonoReal(c.telefonoWhatsapp)) return c.telefonoWhatsapp as string
+  return 'Contacto sin identificar'
+}
+
+function inicialesMostradas(c: ConvLike): string {
+  const ini = `${(c.patient?.nombre ?? '')[0] ?? ''}${(c.patient?.apellido ?? '')[0] ?? ''}`.trim()
+  return ini || '?'
+}
+
 function ConversationBadge({ status }: { status: string }) {
   if (status === 'HUMANO') return (
     <span className="px-1.5 py-0.5 rounded-full text-xs bg-red-100 text-red-700 font-medium">
@@ -138,16 +164,12 @@ export function InboxPanel() {
             >
               <div className="flex items-start gap-3">
                 <div className="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0 text-sm font-bold text-gray-600">
-                  {conv.patient
-                    ? `${conv.patient.nombre[0]}${conv.patient.apellido[0]}`
-                    : '?'}
+                  {inicialesMostradas(conv)}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-1">
                     <p className="text-sm font-medium text-gray-900 truncate">
-                      {conv.patient
-                        ? `${conv.patient.nombre} ${conv.patient.apellido}`
-                        : conv.telefonoWhatsapp}
+                      {nombreMostrado(conv)}
                     </p>
                     {((conv?._count?.messages ?? 0) > 0) && (
                       <span className="w-5 h-5 bg-brand-600 text-white text-xs rounded-full flex items-center justify-center flex-shrink-0">
@@ -177,11 +199,9 @@ export function InboxPanel() {
           <div className="flex items-center justify-between p-4 border-b border-gray-100">
             <div>
               <p className="font-medium text-gray-900">
-                {conversation.patient
-                  ? `${conversation.patient.nombre} ${conversation.patient.apellido}`
-                  : conversation.telefonoWhatsapp}
+                {nombreMostrado(conversation)}
               </p>
-              <p className="text-xs text-gray-400">{conversation.telefonoWhatsapp}</p>
+              <p className="text-xs text-gray-400">{esTelefonoReal(conversation.telefonoWhatsapp) ? conversation.telefonoWhatsapp : 'Número no disponible (WhatsApp privado)'}</p>
             </div>
             <div className="flex items-center gap-2">
               {conversation.status === 'BOT' && (
