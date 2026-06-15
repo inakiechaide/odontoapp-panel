@@ -82,6 +82,12 @@ api.interceptors.response.use(
           const newToken = res.data.accessToken
           accessToken = newToken
           if (typeof window !== 'undefined') localStorage.setItem(TOKEN_KEY, newToken)
+          // El backend rota el refresh token: guardamos el nuevo para el próximo refresh.
+          const newRefresh = res.data.refreshToken
+          if (newRefresh) {
+            refreshToken = newRefresh
+            if (typeof window !== 'undefined') localStorage.setItem(REFRESH_KEY, newRefresh)
+          }
           pendingQueue.forEach((p) => p.resolve(newToken))
           pendingQueue = []
           original.headers.Authorization = `Bearer ${newToken}`
