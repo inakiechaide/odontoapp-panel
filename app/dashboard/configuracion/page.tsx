@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Wifi, WifiOff, RefreshCw, Smartphone } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import api from '@/lib/api'
+import AiSettingsCard from '@/components/settings/AiSettingsCard'
 
 interface WAStatus {
   connected: boolean
@@ -134,6 +135,9 @@ export default function ConfiguracionPage() {
         )}
       </div>
 
+      {/* Inteligencia de Sofía */}
+      <AiSettingsCard />
+
       {/* Info del sistema */}
       <div className="bg-white rounded-xl border border-gray-200 p-6">
         <h2 className="font-semibold text-gray-900 mb-4">Información del sistema</h2>
@@ -141,8 +145,8 @@ export default function ConfiguracionPage() {
           {[
             ['Backend', process.env.NEXT_PUBLIC_API_URL ?? '—'],
             ['Base de datos', 'Supabase PostgreSQL (sa-east-1)'],
-            ['IA', 'Gemini 2.0 Flash'],
-            ['STT', 'Groq Whisper Large v3 Turbo'],
+            ['IA', 'Mistral (configurable arriba) + Gemini de respaldo'],
+            ['Transcripción de audio', 'Voxtral (Mistral)'],
             ['Panel', 'https://odontoapp-panel.vercel.app'],
           ].map(([k, v]) => (
             <div key={k} className="flex items-center justify-between py-2.5">
