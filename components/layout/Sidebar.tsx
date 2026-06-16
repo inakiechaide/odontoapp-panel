@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import {
   LayoutDashboard, Calendar, Users, MessageSquare,
   Package, Shield, Settings, LogOut, Stethoscope,
-  ChevronLeft, ChevronRight, Bell, X
+  ChevronLeft, ChevronRight, Bell, X, UserCog
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useUIStore } from '@/stores/ui.store'
@@ -20,6 +20,7 @@ const navItems = [
   { href: '/dashboard/recordatorios', icon: Bell, label: 'Recordatorios' },
   { href: '/dashboard/inventario', icon: Package, label: 'Inventario' },
   { href: '/dashboard/obras-sociales', icon: Shield, label: 'Obras Sociales' },
+  { href: '/dashboard/equipo', icon: UserCog, label: 'Equipo', adminOnly: true },
   { href: '/dashboard/configuracion', icon: Settings, label: 'Configuración' },
 ]
 
@@ -63,7 +64,7 @@ export function Sidebar() {
 
       {/* Nav */}
       <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
-        {navItems.map((item) => {
+        {navItems.filter((item) => !item.adminOnly || user?.role === 'ADMIN').map((item) => {
           const isActive = item.exact ? pathname === item.href : pathname.startsWith(item.href)
           return (
             <Link

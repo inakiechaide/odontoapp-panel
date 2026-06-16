@@ -5,6 +5,7 @@ import { Wifi, WifiOff, RefreshCw, Smartphone } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import api from '@/lib/api'
 import AiSettingsCard from '@/components/settings/AiSettingsCard'
+import ChangePasswordCard from '@/components/settings/ChangePasswordCard'
 
 interface WAStatus {
   connected: boolean
@@ -134,6 +135,9 @@ export default function ConfiguracionPage() {
           </div>
         )}
       </div>
+
+      {/* Mi contraseña */}
+      <ChangePasswordCard />
 
       {/* Inteligencia de Sofía */}
       <AiSettingsCard />
