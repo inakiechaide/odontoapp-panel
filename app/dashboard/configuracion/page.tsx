@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react'
 import api from '@/lib/api'
 import AiSettingsCard from '@/components/settings/AiSettingsCard'
 import ChangePasswordCard from '@/components/settings/ChangePasswordCard'
+import ScheduleCard from '@/components/settings/ScheduleCard'
 
 interface WAStatus {
   connected: boolean
