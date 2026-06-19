@@ -15,7 +15,7 @@ const navItems = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', exact: true },
   { href: '/dashboard/agenda', icon: Calendar, label: 'Agenda' },
   { href: '/dashboard/pacientes', icon: Users, label: 'Pacientes' },
-  { href: '/dashboard/odontologos', icon: Stethoscope, label: 'Odontólogos' },
+  
   { href: '/dashboard/inbox', icon: MessageSquare, label: 'WhatsApp', badge: true },
   { href: '/dashboard/recordatorios', icon: Bell, label: 'Recordatorios' },
   { href: '/dashboard/inventario', icon: Package, label: 'Inventario' },
