@@ -3,11 +3,12 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
-  UserPlus, KeyRound, Power, Copy, Check, Stethoscope, ShieldCheck, X, Users as UsersIcon,
+  UserPlus, KeyRound, Power, Copy, Check, Stethoscope, ShieldCheck, X, Users as UsersIcon, CalendarClock,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import api from '@/lib/api'
 import { useUIStore } from '@/stores/ui.store'
+import ScheduleCard from '@/components/settings/ScheduleCard'
 
 interface TeamUser {
   id: string
@@ -35,6 +36,7 @@ export default function EquipoPage() {
   const [form, setForm] = useState({ nombre: '', apellido: '', email: '', matricula: '', especialidad: '' })
   const [cred, setCred] = useState<{ email: string; password: string; titulo: string } | null>(null)
   const [copied, setCopied] = useState(false)
+  const [abierto, setAbierto] = useState<string | null>(null)
 
   const { data: users, isLoading } = useQuery<TeamUser[]>({
     queryKey: ['team'],
@@ -152,27 +154,40 @@ export default function EquipoPage() {
           <p className="text-sm text-gray-400 p-5">Cargando…</p>
         ) : (
           users?.map((u) => (
-            <div key={u.id} className="flex items-center justify-between p-4 gap-3">
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="font-medium text-gray-900 truncate">{u.nombre} {u.apellido}</span>
-                  <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${ROLE_COLOR[u.role]}`}>{ROLE_LABEL[u.role]}</span>
-                  {!u.active && <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-red-100 text-red-600">Inactivo</span>}
+            <div key={u.id}>
+              <div className="flex items-center justify-between p-4 gap-3">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-gray-900 truncate">{u.nombre} {u.apellido}</span>
+                    <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${ROLE_COLOR[u.role]}`}>{ROLE_LABEL[u.role]}</span>
+                    {!u.active && <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-red-100 text-red-600">Inactivo</span>}
+                  </div>
+                  <p className="text-xs text-gray-400 truncate">{u.email}{u.dentistProfile?.matricula ? ` · Mat. ${u.dentistProfile.matricula}` : ''}{u.dentistProfile?.especialidad ? ` · ${u.dentistProfile.especialidad}` : ''}</p>
                 </div>
-                <p className="text-xs text-gray-400 truncate">{u.email}{u.dentistProfile?.matricula ? ` · Mat. ${u.dentistProfile.matricula}` : ''}{u.dentistProfile?.especialidad ? ` · ${u.dentistProfile.especialidad}` : ''}</p>
-              </div>
-              <div className="flex items-center gap-1.5 shrink-0">
-                <button onClick={() => resetPassword.mutate(u)} title="Resetear contraseña"
-                  className="p-2 rounded-lg text-gray-500 hover:bg-gray-100" disabled={resetPassword.isPending}>
-                  <KeyRound className="w-4 h-4" />
-                </button>
-                {u.id !== me?.id && (
-                  <button onClick={() => toggleActive.mutate(u)} title={u.active ? 'Desactivar' : 'Activar'}
-                    className={`p-2 rounded-lg hover:bg-gray-100 ${u.active ? 'text-gray-500' : 'text-emerald-600'}`}>
-                    <Power className="w-4 h-4" />
+                <div className="flex items-center gap-1.5 shrink-0">
+                  {u.dentistProfile && (
+                    <button onClick={() => setAbierto(abierto === u.id ? null : u.id)} title="Franja horaria"
+                      className={`p-2 rounded-lg hover:bg-gray-100 ${abierto === u.id ? 'text-indigo-600' : 'text-gray-500'}`}>
+                      <CalendarClock className="w-4 h-4" />
+                    </button>
+                  )}
+                  <button onClick={() => resetPassword.mutate(u)} title="Resetear contraseña"
+                    className="p-2 rounded-lg text-gray-500 hover:bg-gray-100" disabled={resetPassword.isPending}>
+                    <KeyRound className="w-4 h-4" />
                   </button>
-                )}
+                  {u.id !== me?.id && (
+                    <button onClick={() => toggleActive.mutate(u)} title={u.active ? 'Desactivar' : 'Activar'}
+                      className={`p-2 rounded-lg hover:bg-gray-100 ${u.active ? 'text-gray-500' : 'text-emerald-600'}`}>
+                      <Power className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
               </div>
+              {abierto === u.id && u.dentistProfile && (
+                <div className="px-4 pb-4">
+                  <ScheduleCard dentistId={u.dentistProfile.id} titulo={`Franja de ${u.nombre} ${u.apellido}`} />
+                </div>
+              )}
             </div>
           ))
         )}
