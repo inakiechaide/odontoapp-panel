@@ -7,6 +7,7 @@ import api from '@/lib/api'
 import AiSettingsCard from '@/components/settings/AiSettingsCard'
 import ChangePasswordCard from '@/components/settings/ChangePasswordCard'
 import ScheduleCard from '@/components/settings/ScheduleCard'
+import { useUIStore } from '@/stores/ui.store'
 
 interface WAStatus {
   connected: boolean
@@ -29,6 +30,8 @@ export default function ConfiguracionPage() {
     const t = setInterval(wake, 15_000)
     return () => clearInterval(t)
   }, [])
+
+  const user = useUIStore((s) => s.user)
 
   const { data: waStatus, refetch, isRefetching, dataUpdatedAt } = useQuery<WAStatus>({
     queryKey: ['whatsapp', 'status'],
@@ -140,8 +143,9 @@ export default function ConfiguracionPage() {
       {/* Mi contraseña */}
       <ChangePasswordCard />
 
-      {user?.role === 'DENTIST' && <ScheduleCard dentistId="me" />}
+     {user?.role === 'DENTIST' && <ScheduleCard dentistId="me" />}
 
+      
       {/* Inteligencia de Sofía */}
       <AiSettingsCard />
 
