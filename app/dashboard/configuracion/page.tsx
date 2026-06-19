@@ -140,6 +140,8 @@ export default function ConfiguracionPage() {
       {/* Mi contraseña */}
       <ChangePasswordCard />
 
+      {user?.role === 'DENTIST' && <ScheduleCard dentistId="me" />}
+
       {/* Inteligencia de Sofía */}
       <AiSettingsCard />
 
