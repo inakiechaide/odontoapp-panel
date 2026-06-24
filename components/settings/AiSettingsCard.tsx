@@ -10,6 +10,7 @@ import { toast } from 'sonner'
 import api from '@/lib/api'
 
 type VoiceMode = 'never' | 'audio' | 'always'
+type BotMode = 'IA' | 'CODE'
 
 interface AiSettings {
   id: string
@@ -22,6 +23,7 @@ interface AiSettings {
   topP: number
   frequencyPenalty: number
   presencePenalty: number
+  botMode?: BotMode
 }
 
 // Modelos de Mistral aptos para conversar con tools. IDs exactos de la cuenta.
@@ -116,6 +118,7 @@ export default function AiSettingsCard() {
   const [freqPen, setFreqPen] = useState(0)
   const [presPen, setPresPen] = useState(0)
   const [showAdvanced, setShowAdvanced] = useState(false)
+  const [botMode, setBotMode] = useState<BotMode>('IA')
 
   const { data, isLoading } = useQuery<AiSettings>({
     queryKey: ['ai-settings'],
@@ -132,6 +135,7 @@ export default function AiSettingsCard() {
     setTopP(data.topP ?? 1)
     setFreqPen(data.frequencyPenalty ?? 0)
     setPresPen(data.presencePenalty ?? 0)
+    if (data.botMode) setBotMode(data.botMode)
   }, [data])
 
   const save = useMutation({
@@ -140,6 +144,7 @@ export default function AiSettingsCard() {
         model, temperature, maxTokens, voiceMode, voiceId,
         voiceName: voiceLabel(voiceId),
         topP, frequencyPenalty: freqPen, presencePenalty: presPen,
+        botMode,
       })).data,
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['ai-settings'] })
@@ -166,6 +171,26 @@ export default function AiSettingsCard() {
         <p className="text-sm text-gray-400 p-6">Cargando…</p>
       ) : (
         <div className="p-6 space-y-8">
+          {/* MODO DEL BOT */}
+          <section className="pb-2">
+            <div className="flex items-center justify-between py-2">
+              <div>
+                <p className="text-sm font-medium text-gray-900">Modo del bot</p>
+                <p className="text-xs text-gray-400">IA conversacional o turnos por menú (Code)</p>
+              </div>
+              <div className="flex rounded-lg border border-gray-200 overflow-hidden">
+                <button type="button" onClick={() => setBotMode('IA')}
+                  className={`px-3 py-1.5 text-sm transition-colors ${botMode === 'IA' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}>
+                  IA
+                </button>
+                <button type="button" onClick={() => setBotMode('CODE')}
+                  className={`px-3 py-1.5 text-sm transition-colors ${botMode === 'CODE' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}>
+                  Code
+                </button>
+              </div>
+            </div>
+          </section>
+
           {/* MODELO */}
           <section>
             <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-3">Modelo de IA</h3>
