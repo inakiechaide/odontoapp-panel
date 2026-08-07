@@ -23,6 +23,13 @@ const DIAS: Record<number, string> = { 1: 'Lunes', 2: 'Martes', 3: 'Miercoles', 
 const ORDEN = [1, 2, 3, 4, 5, 6, 0]
 const DURACIONES = [5, 10, 15, 20, 30, 40, 45, 60, 90, 120]
 
+// Normaliza cualquier formato de hora (Date ISO, "Thu Jun 19...", "09:00:00") a "HH:MM"
+function hhmm(v: any): string {
+  if (v == null) return ''
+  const m = String(v).match(/(\d{2}):(\d{2})/)
+  return m ? `${m[1]}:${m[2]}` : ''
+}
+
 function diaPorDefecto(diaSemana: number): ScheduleDay {
   return { diaSemana, horaInicio: '09:00', horaFin: '18:00', duracionSlotMin: 30, activo: false }
 }
@@ -37,12 +44,29 @@ export default function ScheduleCard({ dentistId = 'me', titulo }: { dentistId?:
   })
 
   useEffect(() => {
-    const base = ORDEN.map((d) => data?.dias?.find((x) => x.diaSemana === d) ?? diaPorDefecto(d))
+    const base = ORDEN.map((d) => {
+      const f = data?.dias?.find((x) => x.diaSemana === d)
+      if (!f) return diaPorDefecto(d)
+      return {
+        diaSemana: d,
+        horaInicio: hhmm(f.horaInicio) || '09:00',
+        horaFin: hhmm(f.horaFin) || '18:00',
+        duracionSlotMin: f.duracionSlotMin ?? 30,
+        activo: f.activo ?? false,
+      }
+    })
     setDias(base)
   }, [data])
 
   const guardar = useMutation({
-    mutationFn: async () => (await api.put(`/schedules/${dentistId}`, { dias })).data,
+    mutationFn: async () => {
+      const payload = dias.map((d) => ({
+        ...d,
+        horaInicio: hhmm(d.horaInicio) || '09:00',
+        horaFin: hhmm(d.horaFin) || '18:00',
+      }))
+      return (await api.put(`/schedules/${dentistId}`, { dias: payload })).data
+    },
     onSuccess: () => {
       toast.success('Franja horaria guardada')
       qc.invalidateQueries({ queryKey: ['schedules', dentistId] })
