@@ -232,7 +232,7 @@ export function NewAppointmentModal() {
                   </div>
                 ) : (
                   <div className="grid grid-cols-6 gap-1.5 max-h-32 overflow-y-auto">
-                    {slots.filter((s: any) => s.disponible !== false).slice(0, 24).map((slot: any) => {
+                    {slots.filter((s: any) => s.disponible !== false).map((slot: any) => {
                       const slotTime = format(parseISO(slot.start), 'HH:mm')
                       const isSelected = watch('slotStart') === slot.start
                       return (
