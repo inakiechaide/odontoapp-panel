@@ -21,7 +21,7 @@ interface ScheduleResponse {
 
 const DIAS: Record<number, string> = { 1: 'Lunes', 2: 'Martes', 3: 'Miercoles', 4: 'Jueves', 5: 'Viernes', 6: 'Sabado', 0: 'Domingo' }
 const ORDEN = [1, 2, 3, 4, 5, 6, 0]
-const DURACIONES = [15, 20, 30, 40, 45, 60]
+const DURACIONES = [5, 10, 15, 20, 30, 40, 45, 60, 90, 120]
 
 function diaPorDefecto(diaSemana: number): ScheduleDay {
   return { diaSemana, horaInicio: '09:00', horaFin: '18:00', duracionSlotMin: 30, activo: false }
