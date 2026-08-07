@@ -83,7 +83,9 @@ export function useCreateAppointment() {
       return res.data
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: appointmentKeys.all })
+      qc.invalidateQueries({ queryKey: appointmentKeys.all })   // listas de turnos
+      qc.invalidateQueries({ queryKey: ['agenda'] })            // agenda del día (todas las fechas/dentistas)
+      qc.invalidateQueries({ queryKey: ['slots'] })             // horarios disponibles
     },
   })
 }
@@ -109,6 +111,8 @@ export function useUpdateAppointmentStatus() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: appointmentKeys.all })
+      qc.invalidateQueries({ queryKey: ['agenda'] })
+      qc.invalidateQueries({ queryKey: ['slots'] })
     },
   })
 }
