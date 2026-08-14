@@ -10,7 +10,7 @@ import { toast } from 'sonner'
 import api from '@/lib/api'
 
 type VoiceMode = 'never' | 'audio' | 'always'
-type BotMode = 'IA' | 'CODE'
+type BotMode = 'IA' | 'CODE' | 'OFF'
 
 interface AiSettings {
   id: string
@@ -175,20 +175,23 @@ export default function AiSettingsCard() {
           <section className="pb-2">
             <div className="flex items-center justify-between py-2">
               <div>
-                <p className="text-sm font-medium text-gray-900">Modo del bot</p>
-                <p className="text-xs text-gray-400">IA conversacional o turnos por menú (Code)</p>
+                <p className="text-sm font-medium text-gray-900">Respuestas automáticas</p>
+                <p className="text-xs text-gray-400">IA conversacional, menú por opciones, o apagado</p>
               </div>
               <div className="flex rounded-lg border border-gray-200 overflow-hidden">
-                <button type="button" onClick={() => setBotMode('IA')}
-                  className={`px-3 py-1.5 text-sm transition-colors ${botMode === 'IA' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}>
-                  IA
-                </button>
-                <button type="button" onClick={() => setBotMode('CODE')}
-                  className={`px-3 py-1.5 text-sm transition-colors ${botMode === 'CODE' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}>
-                  Code
-                </button>
+                {(([['IA', 'IA'], ['CODE', 'Menú'], ['OFF', 'Apagado']]) as [BotMode, string][]).map(([m, label]) => (
+                  <button key={m} type="button" onClick={() => setBotMode(m)}
+                    className={`px-3 py-1.5 text-sm transition-colors ${botMode === m ? 'bg-indigo-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}>
+                    {label}
+                  </button>
+                ))}
               </div>
             </div>
+            {botMode === 'OFF' && (
+              <p className="text-xs text-amber-600 mt-1">
+                El bot no responde los mensajes entrantes. Los recordatorios se siguen enviando normalmente.
+              </p>
+            )}
           </section>
 
           {/* MODELO */}
