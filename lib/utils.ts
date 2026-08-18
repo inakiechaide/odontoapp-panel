@@ -34,15 +34,15 @@ export const STATUS_LABELS: Record<AppointmentStatus, string> = {
 }
 
 export const STATUS_COLORS: Record<AppointmentStatus, string> = {
-  PENDIENTE: 'bg-amber-100 text-amber-800 border-amber-200',
-  CONFIRMADO: 'bg-green-100 text-green-800 border-green-200',
-  EN_CURSO: 'bg-blue-100 text-blue-800 border-blue-200',
-  COMPLETADO: 'bg-emerald-100 text-emerald-800 border-emerald-200',
-  CANCELADO: 'bg-red-100 text-red-800 border-red-200',
-  AUSENTE: 'bg-gray-200 text-gray-700 border-gray-300',
-  ASISTIO: 'bg-emerald-100 text-emerald-800 border-emerald-200',
-  LLEGO_TARDE: 'bg-orange-100 text-orange-800 border-orange-200',
-  AUSENTE_CON_AVISO: 'bg-gray-100 text-gray-600 border-gray-200',
+  PENDIENTE: 'bg-amber-100 text-amber-900 border-amber-300',
+  CONFIRMADO: 'bg-green-100 text-green-900 border-green-400',
+  EN_CURSO: 'bg-blue-100 text-blue-900 border-blue-400',
+  COMPLETADO: 'bg-slate-200 text-slate-800 border-slate-400',
+  CANCELADO: 'bg-red-100 text-red-900 border-red-400',
+  AUSENTE: 'bg-red-200 text-red-900 border-red-500',
+  ASISTIO: 'bg-emerald-100 text-emerald-900 border-emerald-400',
+  LLEGO_TARDE: 'bg-orange-100 text-orange-900 border-orange-400',
+  AUSENTE_CON_AVISO: 'bg-rose-100 text-rose-900 border-rose-300',
 }
 
 export const INSURANCE_LABELS: Record<string, string> = {
