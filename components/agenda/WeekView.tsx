@@ -197,11 +197,14 @@ export function WeekView() {
   const weekEnd = endOfWeek(agendaDate, { weekStartsOn: 1 })
   const weekDays = eachDayOfInterval({ start: weekStart, end: weekEnd }) // Lun a Dom
 
-  const handleSlotClick = (date: Date, hour: number) => {
-    const dateTime = new Date(date)
-    dateTime.setHours(hour, 0, 0, 0)
-    openModal('new-appointment', { prefillDate: dateTime.toISOString() })
-  }
+const handleSlotClick = (date: Date, hour: number) => {
+  const dateTime = new Date(date)
+  dateTime.setHours(hour, 0, 0, 0)
+  openModal('new-appointment', {
+    prefillDate: dateTime.toISOString(),
+    prefillDentistId: selectedDentistId,   // ← el profesional del contexto/columna
+  })
+}
 
   const handleAppointmentClick = (appt: Turno) => {
     setSelectedAppt(appt.id)
