@@ -19,8 +19,9 @@ interface Patient {
 
 interface Dentist {
   id: string
-  nombre: string
-  apellido: string
+  nombre?: string
+  apellido?: string
+  user?: { nombre?: string; apellido?: string }
 }
 
 const DURATIONS = [5, 10, 15, 20, 30, 45, 60, 90]
@@ -71,10 +72,16 @@ export function NewAppointmentModal() {
   })
 
   // Dentistas
-  const { data: dentists } = useQuery<Dentist[]>({
-    queryKey: ['dentists'],
-    queryFn: async () => (await api.get('/dentists')).data,
-  })
+  {dentists?.map((d: any) => {
+  const nombre = d.nombre ?? d.user?.nombre ?? d.firstName ?? ''
+  const apellido = d.apellido ?? d.user?.apellido ?? d.lastName ?? ''
+  const label = `${nombre} ${apellido}`.trim()
+  return (
+    <option key={d.id} value={d.id}>
+      {label ? `Dr/a. ${label}` : 'Profesional'}
+    </option>
+  )
+})}
 
   // Slots disponibles
   const fechaObj = fecha ? new Date(`${fecha}T00:00:00`) : null
