@@ -1,331 +1,329 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
-import { format, parseISO } from 'date-fns'
-import { es } from 'date-fns/locale'
-import { X, Search, Calendar, Clock, User, Stethoscope } from 'lucide-react'
-import { toast } from 'sonner'
-import { cn } from '@/lib/utils'
-import { useCreateAppointment, useSlots } from '@/hooks/useAppointments'
-import { useSearchPatients } from '@/hooks/useData'
-import { useUIStore } from '@/stores/ui.store'
+import { useState, useEffect, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { X, Search, Clock, User, Calendar, Stethoscope, FileText } from 'lucide-react'
+import { toast } from 'sonner'
 import api from '@/lib/api'
-import type { Patient, DentistProfile, Treatment } from '@/types'
+import { useUIStore } from '@/stores/ui.store'
+import { useCreateAppointment, useSlots } from '@/hooks/useAppointments'
+import { cn } from '@/lib/utils'
 
-const schema = z.object({
-  patientId: z.string().min(1, 'Seleccioná un paciente'),
-  dentistId: z.string().min(1, 'Seleccioná un odontólogo'),
-  fecha: z.string().min(1, 'Seleccioná una fecha'),
-  slotStart: z.string().min(1, 'Seleccioná un horario'),
-  duracionMin: z.number().default(30),
-  tipoTratamiento: z.string().optional(),
-  motivoConsulta: z.string().optional(),
-  piezasDentarias: z.array(z.number()).optional(),
-})
-type FormData = z.infer<typeof schema>
+interface Patient {
+  id: string
+  nombre: string
+  apellido: string
+  telefonoWhatsapp: string | null
+  obraSocial: string | null
+}
 
-const TIPOS_TRATAMIENTO = [
-  'Consulta inicial', 'Control', 'Limpieza/Profilaxis', 'Caries', 'Obturación',
-  'Extracción simple', 'Extracción compleja', 'Endodoncia', 'Corona', 'Puente',
-  'Implante', 'Ortodoncia', 'Blanqueamiento', 'Cirugía', 'Urgencia',
-  'Periodoncia', 'Pedodoncia', 'Radiografía', 'Presupuesto'
-]
+interface Dentist {
+  id: string
+  nombre: string
+  apellido: string
+}
 
-// Piezas FDI para selección rápida
-const FDI_PIECES = {
-  'Superior derecho (1X)': [18,17,16,15,14,13,12,11],
-  'Superior izquierdo (2X)': [21,22,23,24,25,26,27,28],
-  'Inferior izquierdo (3X)': [31,32,33,34,35,36,37,38],
-  'Inferior derecho (4X)': [41,42,43,44,45,46,47,48],
+const DURATIONS = [5, 10, 15, 20, 30, 45, 60, 90]
+
+// Extrae "YYYY-MM-DD" y "HH:MM" de un ISO/fecha sin depender de la zona horaria del server
+function splitPrefill(iso?: string): { fecha: string; hora: string } {
+  if (!iso) return { fecha: '', hora: '' }
+  const d = new Date(iso)
+  if (isNaN(d.getTime())) return { fecha: '', hora: '' }
+  const pad = (n: number) => String(n).padStart(2, '0')
+  const fecha = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+  const hora = `${pad(d.getHours())}:${pad(d.getMinutes())}`
+  return { fecha, hora }
 }
 
 export function NewAppointmentModal() {
-  const { closeModal, modalData } = useUIStore()
-  const [patientSearch, setPatientSearch] = useState('')
-  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null)
-  const [selectedPiezas, setSelectedPiezas] = useState<number[]>([])
-  const [showPiezas, setShowPiezas] = useState(false)
-
-  const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<FormData>({
-    resolver: zodResolver(schema),
-    defaultValues: {
-      duracionMin: 30,
-      fecha: modalData?.prefillDate
-        ? format(new Date(modalData.prefillDate as string), 'yyyy-MM-dd')
-        : format(new Date(), 'yyyy-MM-dd'),
-    }
-  })
-
-  const watchFecha = watch('fecha')
-  const watchDentistId = watch('dentistId')
-  const watchDuracion = watch('duracionMin')
-
-  // Buscar pacientes
-  const { data: patients } = useSearchPatients(patientSearch)
-
-  // Listar dentistas
-  const { data: dentists } = useQuery({
-    queryKey: ['dentists'],
-    queryFn: async () => {
-      const res = await api.get('/dentists')
-      return res.data as DentistProfile[]
-    }
-  })
-
-  // Auto-seleccionar dentista si solo hay uno
-  useEffect(() => {
-    if (dentists?.length === 1) {
-      setValue('dentistId', dentists[0].id)
-    }
-  }, [dentists, setValue])
-
-  // Slots disponibles
-  const { data: slots, isLoading: slotsLoading } = useSlots(
-    watchDentistId,
-    watchFecha ? new Date(watchFecha + 'T12:00:00') : null,
-    watchDuracion
-  )
-
+  const { closeModal, selectedDentistId, modalData } = useUIStore()
   const createAppointment = useCreateAppointment()
 
-  const onSubmit = async (data: FormData) => {
-    try {
-      await createAppointment.mutateAsync({
-        patientId: data.patientId,
-        dentistId: data.dentistId,
-        fechaHora: data.slotStart,
-        duracionMin: data.duracionMin,
-        tipoTratamiento: data.tipoTratamiento,
-        motivoConsulta: data.motivoConsulta,
-      })
-      toast.success('¡Turno creado exitosamente!')
-      closeModal()
-    } catch (err: any) {
-      const msg = err?.response?.data?.message
-      toast.error(Array.isArray(msg) ? msg[0] : msg || 'Error al crear el turno')
-    }
+  // Horario preseleccionado desde el "+" de la agenda
+  const prefill = useMemo(
+    () => splitPrefill((modalData as any)?.prefillDate),
+    [modalData],
+  )
+
+  const [step, setStep] = useState<'patient' | 'details'>('patient')
+  const [search, setSearch] = useState('')
+  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null)
+  const [dentistId, setDentistId] = useState(selectedDentistId ?? '')
+  const [fecha, setFecha] = useState(prefill.fecha)
+  const [hora, setHora] = useState(prefill.hora)
+  const [duracionMin, setDuracionMin] = useState(30)
+  const [motivoConsulta, setMotivoConsulta] = useState('')
+  const [tipoTratamiento, setTipoTratamiento] = useState('')
+
+  // Si el modal se abre (o cambia el slot clickeado) con un horario preseleccionado, lo aplicamos
+  useEffect(() => {
+    if (prefill.fecha) setFecha(prefill.fecha)
+    if (prefill.hora) setHora(prefill.hora)
+  }, [prefill.fecha, prefill.hora])
+
+  // Búsqueda de pacientes
+  const { data: patients, isLoading: searchingPatients } = useQuery<Patient[]>({
+    queryKey: ['patients-search', search],
+    queryFn: async () => (await api.get('/patients', { params: { search, limit: 8 } })).data.data ?? [],
+    enabled: search.length >= 2,
+  })
+
+  // Dentistas
+  const { data: dentists } = useQuery<Dentist[]>({
+    queryKey: ['dentists'],
+    queryFn: async () => (await api.get('/dentists')).data,
+  })
+
+  // Slots disponibles
+  const fechaObj = fecha ? new Date(`${fecha}T00:00:00`) : null
+  const { data: slots, isLoading: loadingSlots } = useSlots(dentistId, fechaObj, duracionMin)
+
+  const handleSelectPatient = (patient: Patient) => {
+    setSelectedPatient(patient)
+    setStep('details')
   }
 
-  const togglePieza = (num: number) => {
-    setSelectedPiezas(prev =>
-      prev.includes(num) ? prev.filter(p => p !== num) : [...prev, num]
-    )
+  const handleSubmit = async () => {
+    if (!selectedPatient || !dentistId || !fecha || !hora) {
+      toast.error('Completá todos los campos obligatorios')
+      return
+    }
+
+    const fechaHora = new Date(`${fecha}T${hora}:00`)
+    try {
+      await createAppointment.mutateAsync({
+        patientId: selectedPatient.id,
+        dentistId,
+        fechaHora: fechaHora.toISOString(),
+        duracionMin,
+        motivoConsulta: motivoConsulta || undefined,
+        tipoTratamiento: tipoTratamiento || undefined,
+      })
+      toast.success('Turno creado correctamente')
+      closeModal()
+    } catch {
+      toast.error('No se pudo crear el turno')
+    }
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40" onClick={closeModal}>
+      <div
+        className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
-        <div className="flex items-center justify-between p-5 border-b border-gray-100">
-          <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-            <Calendar className="w-5 h-5 text-brand-600" />
-            Nuevo turno
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+          <h2 className="text-lg font-semibold text-gray-900">
+            {step === 'patient' ? 'Seleccionar paciente' : 'Nuevo turno'}
           </h2>
-          <button onClick={closeModal} className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors">
-            <X className="w-5 h-5 text-gray-400" />
+          <button onClick={closeModal} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
+            <X className="w-5 h-5 text-gray-500" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col flex-1 min-h-0">
-          <div className="overflow-y-auto p-5 space-y-5 flex-1">
-
-            {/* Buscar paciente */}
+        {/* Body */}
+        <div className="flex-1 overflow-y-auto p-6">
+          {step === 'patient' ? (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                <User className="w-4 h-4 inline mr-1" />
-                Paciente *
-              </label>
-              {selectedPatient ? (
-                <div className="flex items-center justify-between p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                  <div>
-                    <p className="font-medium text-blue-800">{selectedPatient.nombre} {selectedPatient.apellido}</p>
-                    <p className="text-xs text-blue-600">DNI: {selectedPatient.dni || '—'} · {selectedPatient.telefonoWhatsapp || '—'}</p>
-                  </div>
-                  <button type="button" onClick={() => { setSelectedPatient(null); setValue('patientId', '') }}
-                    className="text-xs text-blue-600 hover:text-blue-800 underline">Cambiar</button>
+              <div className="relative mb-4">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Buscar por nombre, apellido o DNI…"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  autoFocus
+                  className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-100 focus:border-brand-300"
+                />
+              </div>
+
+              {search.length < 2 ? (
+                <p className="text-sm text-gray-400 text-center py-8">
+                  Escribí al menos 2 caracteres para buscar
+                </p>
+              ) : searchingPatients ? (
+                <p className="text-sm text-gray-400 text-center py-8">Buscando…</p>
+              ) : patients && patients.length > 0 ? (
+                <div className="space-y-1.5">
+                  {patients.map((patient) => (
+                    <button
+                      key={patient.id}
+                      onClick={() => handleSelectPatient(patient)}
+                      className="w-full text-left p-3 rounded-lg border border-gray-200 hover:border-brand-300 hover:bg-brand-50/40 transition-all"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-full bg-brand-100 flex items-center justify-center flex-shrink-0">
+                          <User className="w-4 h-4 text-brand-600" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-medium text-gray-900 truncate">
+                            {patient.nombre} {patient.apellido}
+                          </p>
+                          <p className="text-xs text-gray-500 truncate">
+                            {patient.obraSocial || 'Sin obra social'}
+                            {patient.telefonoWhatsapp ? ` · ${patient.telefonoWhatsapp}` : ''}
+                          </p>
+                        </div>
+                      </div>
+                    </button>
+                  ))}
                 </div>
               ) : (
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <input
-                    value={patientSearch}
-                    onChange={(e) => setPatientSearch(e.target.value)}
-                    placeholder="Buscar por nombre o DNI..."
-                    className="w-full pl-9 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-                  />
-                  {patients && patients.length > 0 && patientSearch && (
-                    <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-lg mt-1 shadow-lg z-10 max-h-48 overflow-y-auto">
-                      {patients.map(p => (
-                        <button key={p.id} type="button"
-                          onClick={() => { setSelectedPatient(p); setValue('patientId', p.id); setPatientSearch('') }}
-                          className="w-full text-left px-4 py-2.5 hover:bg-gray-50 border-b border-gray-50 last:border-0">
-                          <p className="text-sm font-medium">{p.nombre} {p.apellido}</p>
-                          <p className="text-xs text-gray-400">DNI: {p.dni || '—'}</p>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                <p className="text-sm text-gray-400 text-center py-8">
+                  No se encontraron pacientes
+                </p>
               )}
-              {errors.patientId && <p className="text-red-500 text-xs mt-1">{errors.patientId.message}</p>}
             </div>
-
-            {/* Odontólogo */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                <Stethoscope className="w-4 h-4 inline mr-1" />
-                Odontólogo *
-              </label>
-              <select {...register('dentistId')}
-                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
-                <option value="">Seleccioná un odontólogo</option>
-                {dentists?.map(d => (
-                  <option key={d.id} value={d.id}>
-                    {(d as any).user?.nombre} {(d as any).user?.apellido} — {(d as any).matricula}
-                  </option>
-                ))}
-              </select>
-              {errors.dentistId && <p className="text-red-500 text-xs mt-1">{errors.dentistId.message}</p>}
-            </div>
-
-            {/* Fecha y duración */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Fecha *</label>
-                <input type="date" {...register('fecha')}
-                  min={format(new Date(), 'yyyy-MM-dd')}
-                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
-                {errors.fecha && <p className="text-red-500 text-xs mt-1">{errors.fecha.message}</p>}
+          ) : (
+            <div className="space-y-4">
+              {/* Paciente seleccionado */}
+              <div className="flex items-center gap-3 p-3 bg-brand-50/60 rounded-lg border border-brand-100">
+                <div className="w-9 h-9 rounded-full bg-brand-100 flex items-center justify-center flex-shrink-0">
+                  <User className="w-4 h-4 text-brand-600" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium text-gray-900 truncate">
+                    {selectedPatient?.nombre} {selectedPatient?.apellido}
+                  </p>
+                  <p className="text-xs text-gray-500 truncate">
+                    {selectedPatient?.obraSocial || 'Sin obra social'}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setStep('patient')}
+                  className="text-xs text-brand-600 hover:text-brand-700 font-medium"
+                >
+                  Cambiar
+                </button>
               </div>
+
+              {/* Dentista */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Duración</label>
-                <select {...register('duracionMin', { valueAsNumber: true })}
-                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
-                  <option value={5}>5 minutos</option>
-                  <option value={10}>10 minutos</option>
-                  <option value={15}>15 minutos</option>
-                  <option value={30}>30 minutos</option>
-                  <option value={45}>45 minutos</option>
-                  <option value={60}>1 hora</option>
-                  <option value={90}>1h 30min</option>
-                  <option value={120}>2 horas</option>
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1.5">
+                  <Stethoscope className="w-4 h-4 text-gray-400" /> Profesional
+                </label>
+                <select
+                  value={dentistId}
+                  onChange={(e) => setDentistId(e.target.value)}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-100 focus:border-brand-300"
+                >
+                  <option value="">Elegí un profesional</option>
+                  {dentists?.map((d) => (
+                    <option key={d.id} value={d.id}>
+                      Dr/a. {d.nombre} {d.apellido}
+                    </option>
+                  ))}
                 </select>
               </div>
-            </div>
 
-            {/* Slots disponibles */}
-            {watchFecha && watchDentistId && (
+              {/* Fecha y duración */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1.5">
+                    <Calendar className="w-4 h-4 text-gray-400" /> Fecha
+                  </label>
+                  <input
+                    type="date"
+                    value={fecha}
+                    onChange={(e) => setFecha(e.target.value)}
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-100 focus:border-brand-300"
+                  />
+                </div>
+                <div>
+                  <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1.5">
+                    <Clock className="w-4 h-4 text-gray-400" /> Duración
+                  </label>
+                  <select
+                    value={duracionMin}
+                    onChange={(e) => setDuracionMin(Number(e.target.value))}
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-100 focus:border-brand-300"
+                  >
+                    {DURATIONS.map((d) => (
+                      <option key={d} value={d}>{d} minutos</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Horario seleccionado + slots disponibles */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  <Clock className="w-4 h-4 inline mr-1" />
-                  Horario disponible *
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1.5">
+                  <Clock className="w-4 h-4 text-gray-400" /> Horario
                 </label>
-                {slotsLoading ? (
-                  <div className="text-center py-4 text-gray-400 text-sm">Consultando disponibilidad...</div>
-                ) : !slots || slots.length === 0 ? (
-                  <div className="text-center py-4 text-amber-600 text-sm bg-amber-50 rounded-lg border border-amber-200">
-                    Sin turnos disponibles para este día
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-6 gap-1.5 max-h-32 overflow-y-auto">
+                <input
+                  type="time"
+                  value={hora}
+                  onChange={(e) => setHora(e.target.value)}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mb-2 focus:outline-none focus:ring-2 focus:ring-brand-100 focus:border-brand-300"
+                />
+                {!fecha || !dentistId ? (
+                  <p className="text-xs text-gray-400">Elegí profesional y fecha para ver horarios disponibles</p>
+                ) : loadingSlots ? (
+                  <p className="text-xs text-gray-400">Cargando horarios…</p>
+                ) : slots && slots.length > 0 ? (
+                  <div className="grid grid-cols-6 gap-1.5 max-h-48 overflow-y-auto">
                     {slots.filter((s: any) => s.disponible !== false).map((slot: any) => {
-                      const slotTime = format(parseISO(slot.start), 'HH:mm')
-                      const isSelected = watch('slotStart') === slot.start
+                      const slotHora = slot.horaDisplay ?? slot.hora ?? slot
+                      const activo = hora === slotHora
                       return (
                         <button
-                          key={slot.start}
+                          key={slotHora}
                           type="button"
-                          onClick={() => setValue('slotStart', slot.start)}
+                          onClick={() => setHora(slotHora)}
                           className={cn(
-                            'px-2 py-1.5 text-xs rounded-lg border font-medium transition-all',
-                            isSelected
+                            'px-2 py-1.5 text-xs rounded-lg border transition-all',
+                            activo
                               ? 'bg-brand-600 text-white border-brand-600'
-                              : 'bg-white text-gray-700 border-gray-300 hover:border-brand-400 hover:bg-brand-50'
+                              : 'bg-white text-gray-700 border-gray-200 hover:border-brand-300 hover:bg-brand-50',
                           )}
                         >
-                          {slotTime}
+                          {slotHora}
                         </button>
                       )
                     })}
                   </div>
+                ) : (
+                  <p className="text-xs text-amber-600">No hay horarios disponibles para ese día</p>
                 )}
-                {errors.slotStart && <p className="text-red-500 text-xs mt-1">{errors.slotStart.message}</p>}
               </div>
-            )}
 
-            {/* Tipo de tratamiento */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Tipo de tratamiento</label>
-              <select {...register('tipoTratamiento')}
-                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
-                <option value="">Seleccioná un tratamiento</option>
-                {TIPOS_TRATAMIENTO.map(t => <option key={t} value={t}>{t}</option>)}
-              </select>
+              {/* Motivo */}
+              <div>
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1.5">
+                  <FileText className="w-4 h-4 text-gray-400" /> Motivo de la consulta
+                </label>
+                <input
+                  type="text"
+                  placeholder="Ej: Control, limpieza, dolor…"
+                  value={motivoConsulta}
+                  onChange={(e) => setMotivoConsulta(e.target.value)}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-100 focus:border-brand-300"
+                />
+              </div>
             </div>
+          )}
+        </div>
 
-            {/* Piezas dentarias FDI */}
-            <div>
-              <button type="button"
-                onClick={() => setShowPiezas(!showPiezas)}
-                className="text-sm font-medium text-brand-600 hover:text-brand-800 underline">
-                {showPiezas ? '▾' : '▸'} Piezas dentarias involucradas (FDI)
-                {selectedPiezas.length > 0 && <span className="ml-2 text-gray-600">→ {selectedPiezas.sort((a,b)=>a-b).join(', ')}</span>}
-              </button>
-              {showPiezas && (
-                <div className="mt-2 p-3 bg-gray-50 rounded-lg border border-gray-200 space-y-3">
-                  {Object.entries(FDI_PIECES).map(([cuadrante, piezas]) => (
-                    <div key={cuadrante}>
-                      <p className="text-xs text-gray-500 mb-1.5 font-medium">{cuadrante}</p>
-                      <div className="flex gap-1.5 flex-wrap">
-                        {piezas.map(num => (
-                          <button key={num} type="button"
-                            onClick={() => togglePieza(num)}
-                            className={cn(
-                              'w-9 h-9 text-xs font-bold rounded border-2 transition-all',
-                              selectedPiezas.includes(num)
-                                ? 'bg-brand-600 text-white border-brand-700 scale-110'
-                                : 'bg-white text-gray-600 border-gray-300 hover:border-brand-400'
-                            )}>
-                            {num}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                  {selectedPiezas.length > 0 && (
-                    <p className="text-xs text-brand-700 font-medium">
-                      Seleccionadas: {selectedPiezas.sort((a,b)=>a-b).join(' · ')}
-                    </p>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Motivo / notas */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Motivo de consulta</label>
-              <textarea {...register('motivoConsulta')} rows={2}
-                placeholder="Descripción breve del motivo..."
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 resize-none" />
-            </div>
-          </div>
-
-          {/* Footer */}
-          <div className="flex gap-3 p-5 border-t border-gray-100">
-            <button type="button" onClick={closeModal}
-              className="flex-1 py-2.5 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 transition-colors">
+        {/* Footer */}
+        {step === 'details' && (
+          <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-gray-200">
+            <button
+              onClick={closeModal}
+              className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+            >
               Cancelar
             </button>
-            <button type="submit" disabled={createAppointment.isPending}
-              className="flex-1 py-2.5 bg-brand-600 hover:bg-brand-700 disabled:opacity-60 text-white font-medium rounded-lg text-sm transition-colors">
-              {createAppointment.isPending ? 'Creando turno...' : 'Confirmar turno'}
+            <button
+              onClick={handleSubmit}
+              disabled={createAppointment.isPending}
+              className="px-5 py-2 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700 disabled:opacity-60 transition-colors"
+            >
+              {createAppointment.isPending ? 'Creando…' : 'Crear turno'}
             </button>
           </div>
-        </form>
+        )}
       </div>
     </div>
   )
