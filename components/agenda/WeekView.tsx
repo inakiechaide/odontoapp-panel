@@ -122,26 +122,26 @@ function DayColumn({ date, dentistId, hours, startHour, onSlotClick, onAppointme
   const gridHeight = hours.length * HOUR_HEIGHT
 
   return (
-    <div className={cn('flex-1 min-w-0 border-r border-gray-100 last:border-r-0', isToday(date) && 'bg-brand-50/40')}>
+    <div className={cn('flex-1 min-w-0 border-r border-gray-300 last:border-r-0', isToday(date) && 'bg-brand-50/40')}>
       <div
-        className={cn('px-2 text-center border-b border-gray-100 sticky top-0 bg-white z-10 flex flex-col items-center justify-center', isToday(date) && 'bg-brand-50')}
+        className={cn('px-2 text-center border-b border-gray-300 sticky top-0 bg-white z-10 flex flex-col items-center justify-center', isToday(date) && 'bg-brand-50')}
         style={{ height: HEADER_HEIGHT }}
       >
-        <p className="text-xs text-gray-400 uppercase">{format(date, 'EEE', { locale: es })}</p>
-        <p className={cn('text-lg font-bold mt-0.5', isToday(date) ? 'text-brand-600' : 'text-gray-800')}>{format(date, 'd')}</p>
-        {agenda?.esFeriado && <span className="text-xs text-red-500 leading-none">{agenda.nombreFeriado}</span>}
+        <p className="text-xs text-gray-500 uppercase font-medium">{format(date, 'EEE', { locale: es })}</p>
+        <p className={cn('text-lg font-bold mt-0.5', isToday(date) ? 'text-brand-600' : 'text-gray-900')}>{format(date, 'd')}</p>
+        {agenda?.esFeriado && <span className="text-xs text-red-600 leading-none">{agenda.nombreFeriado}</span>}
       </div>
 
       <div className="relative" style={{ height: gridHeight }}>
         {hours.map((hour, i) => (
           <div
             key={hour}
-            className="absolute left-0 right-0 border-b border-gray-50 group cursor-pointer hover:bg-gray-50/50"
+            className="absolute left-0 right-0 border-b border-gray-200 group cursor-pointer hover:bg-gray-100/60"
             style={{ top: i * HOUR_HEIGHT, height: HOUR_HEIGHT }}
             onClick={() => !agenda?.esFeriado && onSlotClick(date, hour)}
           >
             <div className="opacity-0 group-hover:opacity-100 flex items-center justify-center h-full transition-opacity">
-              <Plus className="w-4 h-4 text-gray-300" />
+              <Plus className="w-4 h-4 text-gray-400" />
             </div>
           </div>
         ))}
@@ -156,12 +156,12 @@ function DayColumn({ date, dentistId, hours, startHour, onSlotClick, onAppointme
             <div
               key={t.id}
               onClick={(e) => { e.stopPropagation(); onAppointmentClick(t) }}
-              className={cn('absolute rounded px-1.5 py-0.5 text-xs cursor-pointer border hover:opacity-80 transition-opacity overflow-hidden leading-tight', STATUS_COLORS[t.status])}
+              className={cn('absolute rounded px-1.5 py-0.5 text-xs cursor-pointer border shadow-sm hover:brightness-95 transition-all overflow-hidden leading-tight', STATUS_COLORS[t.status])}
               style={{ top, height, left: `calc(${leftPct}% + 2px)`, width: `calc(${widthPct}% - 4px)` }}
               title={`${t.patientNombre} · ${formatTime(t.start)}–${formatTime(t.end)}`}
             >
-              <p className="font-medium truncate">{t.patientNombre}</p>
-              {!compact && <p className="opacity-70">{formatTime(t.start)}</p>}
+              <p className="font-semibold truncate">{t.patientNombre}</p>
+              {!compact && <p className="opacity-80">{formatTime(t.start)}</p>}
             </div>
           )
         })}
@@ -209,18 +209,18 @@ export function WeekView() {
   }
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-      <div className="flex flex-wrap items-center justify-between gap-2 p-3 sm:p-4 border-b border-gray-100">
+    <div className="bg-white rounded-xl border border-gray-300 overflow-hidden">
+      <div className="flex flex-wrap items-center justify-between gap-2 p-3 sm:p-4 border-b border-gray-200">
         <div className="flex items-center gap-2 sm:gap-3">
           <button onClick={() => setAgendaDate(subWeeks(agendaDate, 1))} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
-            <ChevronLeft className="w-5 h-5 text-gray-600" />
+            <ChevronLeft className="w-5 h-5 text-gray-700" />
           </button>
           <h2 className="text-xs sm:text-sm font-semibold text-gray-900">
             {format(weekStart, "d 'de' MMM", { locale: es })} –{' '}
             {format(weekEnd, "d 'de' MMM yyyy", { locale: es })}
           </h2>
           <button onClick={() => setAgendaDate(addWeeks(agendaDate, 1))} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
-            <ChevronRight className="w-5 h-5 text-gray-600" />
+            <ChevronRight className="w-5 h-5 text-gray-700" />
           </button>
           <button onClick={() => setAgendaDate(new Date())} className="px-3 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded-full transition-colors">
             Hoy
@@ -236,11 +236,11 @@ export function WeekView() {
       </div>
 
       <div className="flex overflow-auto">
-        <div className="w-14 flex-shrink-0 border-r border-gray-100">
-          <div style={{ height: HEADER_HEIGHT }} className="border-b border-gray-100" />
+        <div className="w-14 flex-shrink-0 border-r border-gray-300">
+          <div style={{ height: HEADER_HEIGHT }} className="border-b border-gray-300" />
           {hours.map((hour) => (
-            <div key={hour} style={{ height: HOUR_HEIGHT }} className="border-b border-gray-50 flex items-start justify-end pr-2 pt-1">
-              <span className="text-xs text-gray-400">{hour}:00</span>
+            <div key={hour} style={{ height: HOUR_HEIGHT }} className="border-b border-gray-200 flex items-start justify-end pr-2 pt-1">
+              <span className="text-xs text-gray-600 font-medium">{hour}:00</span>
             </div>
           ))}
         </div>
