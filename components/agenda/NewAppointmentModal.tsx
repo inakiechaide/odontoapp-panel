@@ -60,7 +60,8 @@ export function NewAppointmentModal() {
   useEffect(() => {
     if (prefill.fecha) setFecha(prefill.fecha)
     if (prefill.hora) setHora(prefill.hora)
-  }, [prefill.fecha, prefill.hora])
+    if (selectedDentistId) setDentistId(selectedDentistId)
+  }, [prefill.fecha, prefill.hora, selectedDentistId])
 
   // Búsqueda de pacientes
   const { data: patients, isLoading: searchingPatients } = useQuery<Patient[]>({
