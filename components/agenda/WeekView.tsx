@@ -156,7 +156,7 @@ function DayColumn({ date, dentistId, hours, startHour, onSlotClick, onAppointme
             <div
               key={t.id}
               onClick={(e) => { e.stopPropagation(); onAppointmentClick(t) }}
-              className={cn('absolute rounded px-1.5 py-0.5 text-xs cursor-pointer border shadow-sm hover:brightness-95 transition-all overflow-hidden leading-tight', STATUS_COLORS[t.status])}
+              className={cn('absolute rounded px-1.5 py-0.5 text-xs cursor-pointer border shadow-sm transition-all overflow-hidden leading-tight', 'hover:brightness-90 hover:shadow-md hover:ring-2 hover:ring-brand-500 hover:z-20 hover:-translate-y-px', STATUS_COLORS[t.status])}
               style={{ top, height, left: `calc(${leftPct}% + 2px)`, width: `calc(${widthPct}% - 4px)` }}
               title={`${t.patientNombre} · ${formatTime(t.start)}–${formatTime(t.end)}`}
             >
