@@ -154,22 +154,24 @@ export function Odontogram({ value = [], onChange, readOnly = false }: Props) {
     onChange?.(Object.values(next))
   }
 
-  function aplicar(diente: number, cara: Cara) {
+    function aplicar(diente: number, cara: Cara) {
+    // ── Modo borrar: elimina cualquier marca de esa cara, sin importar el tipo ──
+    if (borrar) {
+      const next = { ...marks }
+      delete next[key(diente, cara)]   // la cara puntual que tocaste
+      delete next[key(diente, 'TODO')] // y la marca de pieza completa, si la hubiera
+      emit(next)
+      return
+    }
+
+    // ── Modo pintar: usa el tipo para decidir cara puntual o pieza completa ──
     const dienteCompleto = TIPOS_DIENTE_COMPLETO.has(tipo)
     const caraFinal: Cara = dienteCompleto ? 'TODO' : cara
     const k = key(diente, caraFinal)
     const next = { ...marks }
-
-    if (borrar) {
-      delete next[k]
-      // Si borro y el diente tiene TODO, al clickear cualquier cara en modo borrar quito también TODO si aplica
-      emit(next)
-      return
-    }
     next[k] = { diente, cara: caraFinal, grupo, tipo }
     emit(next)
   }
-
   function onSelectGrupo(g: Grupo) {
     setGrupo(g)
     setTipo(TIPOS[g][0])
