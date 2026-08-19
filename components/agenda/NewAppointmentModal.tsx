@@ -22,9 +22,19 @@ interface Dentist {
   nombre?: string
   apellido?: string
   user?: { nombre?: string; apellido?: string }
+  firstName?: string
+  lastName?: string
 }
 
 const DURATIONS = [5, 10, 15, 20, 30, 45, 60, 90]
+
+// Nombre del profesional, tolerante a distintas formas de la API
+function dentistLabel(d: Dentist): string {
+  const nombre = d.nombre ?? d.user?.nombre ?? d.firstName ?? ''
+  const apellido = d.apellido ?? d.user?.apellido ?? d.lastName ?? ''
+  const full = `${nombre} ${apellido}`.trim()
+  return full ? `Dr/a. ${full}` : 'Profesional'
+}
 
 // Extrae "YYYY-MM-DD" y "HH:MM" de un ISO/fecha sin depender de la zona horaria del server
 function splitPrefill(iso?: string): { fecha: string; hora: string } {
@@ -55,14 +65,20 @@ export function NewAppointmentModal() {
   const [hora, setHora] = useState(prefill.hora)
   const [duracionMin, setDuracionMin] = useState(30)
   const [motivoConsulta, setMotivoConsulta] = useState('')
-  const [tipoTratamiento, setTipoTratamiento] = useState('')
+  const [tipoTratamiento] = useState('')
 
-  // Si el modal se abre (o cambia el slot clickeado) con un horario preseleccionado, lo aplicamos
+  // Aplicar horario preseleccionado (fecha/hora) al abrir desde un slot
   useEffect(() => {
     if (prefill.fecha) setFecha(prefill.fecha)
     if (prefill.hora) setHora(prefill.hora)
-    if (selectedDentistId) setDentistId(selectedDentistId)
-  }, [prefill.fecha, prefill.hora, selectedDentistId])
+  }, [prefill.fecha, prefill.hora])
+
+  // Predeterminar el profesional: primero el del slot clickeado, si no el de la agenda
+  useEffect(() => {
+    const fromSlot = (modalData as any)?.prefillDentistId
+    if (fromSlot) setDentistId(fromSlot)
+    else if (selectedDentistId) setDentistId(selectedDentistId)
+  }, [modalData, selectedDentistId])
 
   // Búsqueda de pacientes
   const { data: patients, isLoading: searchingPatients } = useQuery<Patient[]>({
@@ -72,16 +88,10 @@ export function NewAppointmentModal() {
   })
 
   // Dentistas
-  {dentists?.map((d: any) => {
-  const nombre = d.nombre ?? d.user?.nombre ?? d.firstName ?? ''
-  const apellido = d.apellido ?? d.user?.apellido ?? d.lastName ?? ''
-  const label = `${nombre} ${apellido}`.trim()
-  return (
-    <option key={d.id} value={d.id}>
-      {label ? `Dr/a. ${label}` : 'Profesional'}
-    </option>
-  )
-})}
+  const { data: dentists } = useQuery<Dentist[]>({
+    queryKey: ['dentists'],
+    queryFn: async () => (await api.get('/dentists')).data,
+  })
 
   // Slots disponibles
   const fechaObj = fecha ? new Date(`${fecha}T00:00:00`) : null
@@ -220,7 +230,7 @@ export function NewAppointmentModal() {
                   <option value="">Elegí un profesional</option>
                   {dentists?.map((d) => (
                     <option key={d.id} value={d.id}>
-                      Dr/a. {d.nombre} {d.apellido}
+                      {dentistLabel(d)}
                     </option>
                   ))}
                 </select>
