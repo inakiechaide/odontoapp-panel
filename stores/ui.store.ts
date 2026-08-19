@@ -36,22 +36,22 @@ interface UIStore {
 }
 
 const USER_KEY = 'odontoapp_user'
+const DENTIST_KEY = 'odontoapp_selected_dentist'
 
 export const useUIStore = create<UIStore>((set) => ({
   // null en SSR — se asigna en hydrate() del cliente
   user: null,
   _hydrated: false,
-
   hydrate: () => {
     try {
       const stored = localStorage.getItem(USER_KEY)
       const user = stored ? JSON.parse(stored) : null
-      set({ user, _hydrated: true, agendaDate: new Date() })
+      const selectedDentistId = localStorage.getItem(DENTIST_KEY) || null
+      set({ user, selectedDentistId, _hydrated: true, agendaDate: new Date() })
     } catch {
       set({ _hydrated: true, agendaDate: new Date() })
     }
   },
-
   setUser: (user) => {
     try {
       if (user) localStorage.setItem(USER_KEY, JSON.stringify(user))
@@ -59,26 +59,28 @@ export const useUIStore = create<UIStore>((set) => ({
     } catch { /* SSR */ }
     set({ user })
   },
-
   sidebarOpen: true,
   toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
   setSidebarOpen: (open) => set({ sidebarOpen: open }),
   mobileNavOpen: false,
   setMobileNavOpen: (open) => set({ mobileNavOpen: open }),
   toggleMobileNav: () => set((s) => ({ mobileNavOpen: !s.mobileNavOpen })),
-
   selectedDentistId: null,
-  setSelectedDentistId: (id) => set({ selectedDentistId: id }),
+  setSelectedDentistId: (id) => {
+    try {
+      if (id) localStorage.setItem(DENTIST_KEY, id)
+      else localStorage.removeItem(DENTIST_KEY)
+    } catch { /* SSR */ }
+    set({ selectedDentistId: id })
+  },
   agendaView: 'week',
   setAgendaView: (v) => set({ agendaView: v }),
   agendaDate: null,  // ← null en SSR, se setea en hydrate()
   setAgendaDate: (d) => set({ agendaDate: d }),
-
   activeModal: null,
   modalData: {},
   openModal: (modal, data = {}) => set({ activeModal: modal, modalData: data }),
   closeModal: () => set({ activeModal: null, modalData: {} }),
-
   notifications: [],
   addNotification: (n) =>
     set((s) => ({
