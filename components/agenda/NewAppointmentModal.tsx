@@ -84,7 +84,7 @@ export function NewAppointmentModal() {
   const { data: patients, isLoading: searchingPatients } = useQuery<Patient[]>({
     queryKey: ['patients-search', search],
     queryFn: async () => (await api.get('/patients/search', { params: { q: search } })).data ?? [],
-    enabled: search.length,
+    enabled: search.length >=2,
   })
 
   // Dentistas
