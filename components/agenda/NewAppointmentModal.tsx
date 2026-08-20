@@ -157,14 +157,10 @@ export function NewAppointmentModal() {
                 />
               </div>
 
-              {search.length < 2 ? (
-                <p className="text-sm text-gray-400 text-center py-8">
-                  Escribí al menos 2 caracteres para buscar
-                </p>
-              ) : searchingPatients ? (
-                <p className="text-sm text-gray-400 text-center py-8">Buscando…</p>
+                            {searchingPatients ? (
+                <p className="text-sm text-gray-400 text-center py-8">Cargando pacientes…</p>
               ) : patients && patients.length > 0 ? (
-                <div className="space-y-1.5">
+                <div className="space-y-1.5 max-h-80 overflow-y-auto pr-1">
                   {patients.map((patient) => (
                     <button
                       key={patient.id}
