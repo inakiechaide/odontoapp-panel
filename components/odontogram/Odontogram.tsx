@@ -240,6 +240,106 @@ function ToothSVG({
   )
 }
 
+// ── Ícono de referencia (mini-SVG fiel al símbolo real de cada prestación) ──
+const ICON = 18
+
+function LegendIcon({ p }: { p: Prestacion }) {
+  const c = COLORS[p.color]
+  const c2 = p.color2 ? COLORS[p.color2] : c
+  const cx = ICON / 2, cy = ICON / 2
+  const box = (children: React.ReactNode) => (
+    <svg width={ICON} height={ICON} viewBox={`0 0 ${ICON} ${ICON}`} className="flex-shrink-0" aria-hidden="true">
+      {children}
+    </svg>
+  )
+
+  switch (p.render) {
+    case 'cara_fill':
+    case 'oclusal_fill':
+      return box(
+        <rect x={1} y={1} width={ICON - 2} height={ICON - 2} rx={2} fill={c} stroke="#cbd5e1" strokeWidth={0.8} />,
+      )
+    case 'cara_dual':
+      return box(
+        <rect x={1.5} y={1.5} width={ICON - 3} height={ICON - 3} rx={2} fill={c} stroke={c2} strokeWidth={2} />,
+      )
+    case 'tc':
+      return box(
+        <>
+          <rect x={1} y={1} width={ICON - 2} height={ICON - 2} rx={2} fill="#ffffff" stroke="#cbd5e1" strokeWidth={0.8} />
+          <text x={cx} y={cy + 3} textAnchor="middle" fontSize={7.5} fontWeight={700} fill={c}>TC</text>
+        </>,
+      )
+    case 'pieza_fill':
+      return box(<rect x={1} y={1} width={ICON - 2} height={ICON - 2} rx={3} fill={c} />)
+    case 'x':
+      return box(
+        <g stroke={c} strokeWidth={2.4} strokeLinecap="round">
+          <line x1={3} y1={3} x2={ICON - 3} y2={ICON - 3} />
+          <line x1={ICON - 3} y1={3} x2={3} y2={ICON - 3} />
+        </g>,
+      )
+    case 'circulo':
+      return box(<circle cx={cx} cy={cy} r={ICON / 2 - 2} fill="none" stroke={c} strokeWidth={2.2} />)
+    case 'doble_circulo':
+      return box(
+        <g fill="none">
+          <circle cx={cx} cy={cy} r={ICON / 2 - 4.5} stroke={c} strokeWidth={1.8} />
+          <circle cx={cx} cy={cy} r={ICON / 2 - 1.5} stroke={c2} strokeWidth={1.8} />
+        </g>,
+      )
+    case 'incisal':
+      return box(<line x1={2} y1={cy} x2={ICON - 2} y2={cy} stroke={c} strokeWidth={3.5} strokeLinecap="round" />)
+    case 'erupcionar':
+      return box(
+        <g stroke={c} strokeWidth={1.8} fill="none" strokeLinecap="round">
+          <line x1={cx - 5} y1={ICON - 2} x2={cx - 5} y2={4} />
+          <path d={`M ${cx - 8} 7 L ${cx - 5} 3 L ${cx - 2} 7`} />
+          <line x1={cx + 5} y1={ICON - 2} x2={cx + 5} y2={4} />
+          <path d={`M ${cx + 2} 7 L ${cx + 5} 3 L ${cx + 8} 7`} />
+        </g>,
+      )
+    case 'doble_linea':
+      return box(
+        <g stroke={c} strokeWidth={2}>
+          <line x1={2} y1={cy - 3} x2={ICON - 2} y2={cy - 3} />
+          <line x1={2} y1={cy + 3} x2={ICON - 2} y2={cy + 3} />
+        </g>,
+      )
+    case 'punto':
+      return box(<circle cx={cx} cy={cy} r={3.5} fill={c} />)
+    case 'cuadrito':
+      return box(<rect x={cx - 4} y={cy - 4} width={8} height={8} fill="none" stroke={c} strokeWidth={1.8} />)
+    case 'triangulo':
+      return box(
+        <polygon points={`${cx - 6},${cy - 4} ${cx + 6},${cy - 4} ${cx},${cy + 6}`} fill={c} stroke={c} strokeWidth={1.2} />,
+      )
+    case 'margen_line':
+      return box(
+        <path d={`M 1 ${cy + 3} Q ${cx / 2} ${cy - 4}, ${cx} ${cy + 3} T ${ICON - 1} ${cy + 3}`} fill="none" stroke={c} strokeWidth={2} />,
+      )
+    case 'inter_linea':
+      return box(
+        <g stroke={c} strokeWidth={1.8}>
+          <line x1={3} y1={cy} x2={ICON - 3} y2={cy} />
+          <line x1={3} y1={cy - 3} x2={3} y2={cy + 3} />
+          <line x1={ICON - 3} y1={cy - 3} x2={ICON - 3} y2={cy + 3} />
+        </g>,
+      )
+    case 'inter_flecha':
+      return box(
+        <g stroke={c} strokeWidth={2} fill="none" strokeLinecap="round">
+          <line x1={cx} y1={ICON - 2} x2={cx} y2={3} />
+          <path d={`M ${cx - 4} 7 L ${cx} 3 L ${cx + 4} 7`} />
+        </g>,
+      )
+    case 'conector':
+      return box(<line x1={2} y1={cy} x2={ICON - 2} y2={cy} stroke={c} strokeWidth={2.4} strokeLinecap="round" />)
+    default:
+      return box(<rect x={1} y={1} width={ICON - 2} height={ICON - 2} rx={2} fill={c} />)
+  }
+}
+
 // ── Componente principal ──────────────────────────────────────────
 interface Props {
   value?: OdontogramMark[]
@@ -410,10 +510,10 @@ export function Odontogram({ value = [], onChange, readOnly = false }: Props) {
       {/* Leyenda */}
       <div className="bg-white rounded-xl border border-gray-200 p-3">
         <p className="text-xs font-semibold text-gray-500 uppercase mb-2">Referencias</p>
-        <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-1 text-xs text-gray-600">
+        <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-2 text-xs text-gray-600">
           {PRESTACIONES.map((p) => (
-            <span key={p.id} className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{ background: COLORS[p.color] }} />
+            <span key={p.id} className="flex items-center gap-2">
+              <LegendIcon p={p} />
               {p.label}
             </span>
           ))}
