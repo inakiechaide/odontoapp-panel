@@ -1,5 +1,4 @@
 'use client'
-
 import { useState, useEffect, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { X, Search, Clock, User, Calendar, Stethoscope, FileText } from 'lucide-react'
@@ -28,7 +27,6 @@ interface Dentist {
 
 const DURATIONS = [5, 10, 15, 20, 30, 45, 60, 90]
 
-// Nombre del profesional, tolerante a distintas formas de la API
 function dentistLabel(d: Dentist): string {
   const nombre = d.nombre ?? d.user?.nombre ?? d.firstName ?? ''
   const apellido = d.apellido ?? d.user?.apellido ?? d.lastName ?? ''
@@ -36,7 +34,6 @@ function dentistLabel(d: Dentist): string {
   return full ? `Dr/a. ${full}` : 'Profesional'
 }
 
-// Extrae "YYYY-MM-DD" y "HH:MM" de un ISO/fecha sin depender de la zona horaria del server
 function splitPrefill(iso?: string): { fecha: string; hora: string } {
   if (!iso) return { fecha: '', hora: '' }
   const d = new Date(iso)
@@ -51,7 +48,6 @@ export function NewAppointmentModal() {
   const { closeModal, selectedDentistId, modalData } = useUIStore()
   const createAppointment = useCreateAppointment()
 
-  // Horario preseleccionado desde el "+" de la agenda
   const prefill = useMemo(
     () => splitPrefill((modalData as any)?.prefillDate),
     [modalData],
@@ -67,33 +63,33 @@ export function NewAppointmentModal() {
   const [motivoConsulta, setMotivoConsulta] = useState('')
   const [tipoTratamiento] = useState('')
 
-  // Aplicar horario preseleccionado (fecha/hora) al abrir desde un slot
   useEffect(() => {
     if (prefill.fecha) setFecha(prefill.fecha)
     if (prefill.hora) setHora(prefill.hora)
   }, [prefill.fecha, prefill.hora])
 
-  // Predeterminar el profesional: primero el del slot clickeado, si no el de la agenda
   useEffect(() => {
     const fromSlot = (modalData as any)?.prefillDentistId
     if (fromSlot) setDentistId(fromSlot)
     else if (selectedDentistId) setDentistId(selectedDentistId)
   }, [modalData, selectedDentistId])
 
-  // Búsqueda de pacientes
-   const { data: patients, isLoading: searchingPatients } = useQuery<Patient[]>({
+  // Búsqueda de pacientes: trae lista completa y filtra por q. Tolera respuesta
+  // paginada ({data:[...]}) o array directo ([...]).
+  const { data: patients, isLoading: searchingPatients } = useQuery<Patient[]>({
     queryKey: ['patients-search', search],
-    queryFn: async () =>
-      (await api.get('/patients', { params: { q: search, limit: 50 } })).data.data ?? [],
+    queryFn: async () => {
+      const res = await api.get('/patients', { params: { q: search, limit: 50 } })
+      const body = res.data
+      return (Array.isArray(body) ? body : body?.data ?? body?.items ?? []) as Patient[]
+    },
   })
 
-  // Dentistas
   const { data: dentists } = useQuery<Dentist[]>({
     queryKey: ['dentists'],
     queryFn: async () => (await api.get('/dentists')).data,
   })
 
-  // Slots disponibles
   const fechaObj = fecha ? new Date(`${fecha}T00:00:00`) : null
   const { data: slots, isLoading: loadingSlots } = useSlots(dentistId, fechaObj, duracionMin)
 
@@ -107,7 +103,6 @@ export function NewAppointmentModal() {
       toast.error('Completá todos los campos obligatorios')
       return
     }
-
     const fechaHora = new Date(`${fecha}T${hora}:00`)
     try {
       await createAppointment.mutateAsync({
@@ -157,7 +152,7 @@ export function NewAppointmentModal() {
                 />
               </div>
 
-                            {searchingPatients ? (
+              {searchingPatients ? (
                 <p className="text-sm text-gray-400 text-center py-8">Cargando pacientes…</p>
               ) : patients && patients.length > 0 ? (
                 <div className="space-y-1.5 max-h-80 overflow-y-auto pr-1">
